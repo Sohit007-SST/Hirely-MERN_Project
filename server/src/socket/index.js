@@ -15,8 +15,12 @@ const getIO = () => io;
 
 const broadcastOnline = () => io.emit('users:online', [...onlineUsers.keys()]);
 
-// The client sends a conversation id string (an object { conversationId } is accepted too)
-const readConversationId = (payload) => String((payload && payload.conversationId) || payload || '');
+// The client sends a conversation id string (an object { conversationId } is accepted too).
+// Anything else becomes '' - String() on a crafted object like { toString: 1 } would throw and crash the process.
+const readConversationId = (payload) => {
+  const id = payload && typeof payload === 'object' ? payload.conversationId : payload;
+  return typeof id === 'string' ? id : '';
+};
 
 const initSocket = (server, origins) => {
   io = new Server(server, { cors: { origin: origins, credentials: true } });

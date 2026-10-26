@@ -41,7 +41,7 @@ const listUsers = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query, 20, 50);
 
   const filter = {};
-  if (q && q.trim()) {
+  if (typeof q === 'string' && q.trim()) {
     const regex = new RegExp(escapeRegex(q.trim()), 'i');
     filter.$or = [{ name: regex }, { email: regex }];
   }

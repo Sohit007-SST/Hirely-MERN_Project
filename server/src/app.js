@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
+const ApiError = require('./utils/ApiError');
 
 // Session 2: Express app with a middleware chain and one router per resource
 const app = express();
@@ -24,7 +25,7 @@ app.use(
     origin: (origin, cb) => {
       // Allow same-origin tools (curl, health checks) that send no Origin header
       if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error(`Origin ${origin} is not allowed by CORS`));
+      cb(new ApiError(403, `Origin ${origin} is not allowed by CORS`)); // a 403, not an unexpected 500
     },
     credentials: true,
   })

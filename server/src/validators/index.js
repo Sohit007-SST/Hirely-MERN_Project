@@ -15,9 +15,12 @@ const registerRules = [
   body('role').optional().isIn(['client', 'freelancer']).withMessage('Role must be client or freelancer'),
 ];
 
+// Standard validators check each item of an array, so reject non-strings first (an array password made bcrypt throw a 500)
+const isText = (value) => typeof value === 'string';
+
 const loginRules = [
-  body('email').trim().isEmail().withMessage('Please enter a valid email address').normalizeEmail({ gmail_remove_dots: false }),
-  body('password').notEmpty().withMessage('Password is required'),
+  body('email').custom(isText).withMessage('Please enter a valid email address').trim().isEmail().withMessage('Please enter a valid email address').normalizeEmail({ gmail_remove_dots: false }),
+  body('password').custom(isText).withMessage('Password is required').notEmpty().withMessage('Password is required'),
 ];
 
 // ---- Users ----

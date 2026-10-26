@@ -36,7 +36,7 @@ const listGigs = asyncHandler(async (req, res) => {
   const filter = {};
   if (status !== 'all') filter.status = STATUSES.includes(status) ? status : 'open';
   if (category && CATEGORIES.includes(category)) filter.category = category;
-  if (skill && skill.trim()) filter.skills = new RegExp(`^${escapeRegex(skill.trim())}$`, 'i');
+  if (typeof skill === 'string' && skill.trim()) filter.skills = new RegExp(`^${escapeRegex(skill.trim())}$`, 'i');
 
   const min = Number(minBudget);
   const max = Number(maxBudget);
@@ -44,7 +44,7 @@ const listGigs = asyncHandler(async (req, res) => {
   if (maxBudget && Number.isFinite(max)) filter.budget = { ...filter.budget, $lte: max };
 
   // Session 14: the text index on title, description and skills powers search
-  if (q && q.trim()) filter.$text = { $search: q.trim() };
+  if (typeof q === 'string' && q.trim()) filter.$text = { $search: q.trim() };
 
   const [gigs, total] = await Promise.all([
     Gig.find(filter)

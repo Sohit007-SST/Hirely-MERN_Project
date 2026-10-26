@@ -25,6 +25,13 @@ const start = async () => {
   initSocket(server, allowedOrigins);
   registerListeners();
 
+  server.on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') throw err;
+    // On macOS, port 5000 is often taken by AirPlay Receiver
+    console.error(`Port ${PORT} is already in use. Stop the other process or set PORT to a free port in server/.env`);
+    process.exit(1);
+  });
+
   server.listen(PORT, () => {
     console.log(`GigBazaar API running on http://localhost:${PORT} (${process.env.NODE_ENV || 'development'})`);
   });

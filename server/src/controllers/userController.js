@@ -16,11 +16,11 @@ const listFreelancers = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query, 12);
 
   const filter = { role: 'freelancer', isBanned: false };
-  if (q && q.trim()) {
+  if (typeof q === 'string' && q.trim()) {
     const regex = new RegExp(escapeRegex(q.trim()), 'i');
     filter.$or = [{ name: regex }, { headline: regex }, { skills: regex }];
   }
-  if (skill && skill.trim()) filter.skills = new RegExp(escapeRegex(skill.trim()), 'i');
+  if (typeof skill === 'string' && skill.trim()) filter.skills = new RegExp(escapeRegex(skill.trim()), 'i');
 
   // Session 14: count and page in parallel, lean plain objects
   const [users, total] = await Promise.all([
