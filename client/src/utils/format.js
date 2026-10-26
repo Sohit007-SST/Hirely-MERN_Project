@@ -72,3 +72,15 @@ export function plural(count, word, pluralWord = `${word}s`) {
 
 // Ids from the API are strings; compare them safely
 export const sameId = (a, b) => a != null && b != null && String(a?._id ?? a) === String(b?._id ?? b);
+
+// Same list as the server's Gig.CATEGORIES (keep the two in sync)
+export const CATEGORIES = [
+  'Web Development',
+  'Mobile Apps',
+  'Design',
+  'Writing',
+  'Marketing',
+  'Data & AI',
+  'Video & Audio',
+  'Other',
+];
