@@ -35,13 +35,14 @@ const errorHandler = (err, req, res, next) => {
     message = 'Request body is not valid JSON';
   }
 
-  const isDev = process.env.NODE_ENV === 'development';
-  if (statusCode >= 500) console.error(err);
+  // Only unexpected errors (plain 500s) are logged and expose a stack in development
+  const unexpected = statusCode === 500;
+  if (unexpected) console.error(err);
 
   res.status(statusCode).json({
     success: false,
     message,
-    ...(isDev && statusCode >= 500 ? { stack: err.stack } : {}),
+    ...(unexpected && process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}),
   });
 };
 
