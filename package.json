@@ -1,0 +1,14 @@
+{
+  "name": "gigbazaar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GigBazaar - a freelance mini-marketplace built with the MERN stack",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server"
+  },
+  "author": "Sohit Kumar Nagar",
+  "license": "MIT"
+}

@@ -1,0 +1,10 @@
+const mongoose = require('mongoose');
+
+// Session 3: connect Mongoose once at startup
+const connectDB = async () => {
+  const conn = await mongoose.connect(process.env.MONGO_URI);
+  console.log(`MongoDB connected: ${conn.connection.host}/${conn.connection.name}`);
+  return conn;
+};
+
+module.exports = connectDB;
