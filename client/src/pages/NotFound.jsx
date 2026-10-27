@@ -1,19 +1,26 @@
-import { Link } from 'react-router-dom';
-import EmptyState from '../components/EmptyState';
+import { Home } from 'lucide-react';
+import { Layout } from '../components/shell';
+import { Button } from '../components/ui';
+import NotFoundArt from '../components/rest/NotFoundArt';
 
 export default function NotFound() {
   return (
-    <div className="container page">
-      <EmptyState
-        title="We couldn't find that page"
-        text="The link may be old or mistyped. Head back home or look through the open gigs."
-        action={
-          <>
-            <Link className="btn btn--primary" to="/">Go to the home page</Link>
-            <Link className="btn btn--secondary" to="/gigs">Browse gigs</Link>
-          </>
-        }
-      />
-    </div>
+    <Layout variant="full">
+      <section className="rest-404" aria-labelledby="not-found-title">
+        <NotFoundArt />
+        <h1 id="not-found-title" className="rest-404__title">
+          This page doesn't exist
+        </h1>
+        <p className="rest-404__text">The link may be old or mistyped. Your feed has the newest open gigs.</p>
+        <div className="rest-404__actions">
+          <Button icon={Home} to="/">
+            Go to your feed
+          </Button>
+          <Button variant="tertiary" to="/gigs">
+            Browse gigs
+          </Button>
+        </div>
+      </section>
+    </Layout>
   );
 }

@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Briefcase, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import Loader from '../components/Loader';
+import { Button } from '../components/ui';
+import AuthCard, { AuthCardSkeleton } from '../components/rest/AuthCard';
+import FloatingField from '../components/rest/FloatingField';
+import RoleCard from '../components/rest/RoleCard';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 const ROLES = [
-  { value: 'client', title: 'I want to hire', text: 'Post gigs and compare bids from freelancers.' },
-  { value: 'freelancer', title: 'I want to work', text: 'Find open gigs and send bids with your price.' },
+  { value: 'client', icon: Briefcase, title: 'I want to hire', text: 'Post gigs and compare bids.' },
+  { value: 'freelancer', icon: User, title: 'I want to work', text: 'Find gigs and send bids.' },
 ];
 
 export default function Register() {
@@ -27,7 +31,7 @@ export default function Register() {
   const from = location.state?.from;
   const dest = from?.pathname ? `${from.pathname}${from.search || ''}` : '/dashboard';
 
-  if (loading) return <Loader full />;
+  if (loading) return <AuthCardSkeleton />;
   if (user) return <Navigate to={dest} replace />;
 
   const setRole = (value) => {
@@ -75,79 +79,53 @@ export default function Register() {
     }
   };
 
-  const fieldProps = (name) => ({
+  const field = (name) => ({
     id: `register-${name}`,
     name,
-    className: 'input',
     value: form[name],
     onChange,
-    'aria-invalid': Boolean(fieldErrors[name]),
-    'aria-describedby': fieldErrors[name] ? `register-${name}-error` : name === 'password' ? 'register-password-hint' : undefined,
+    error: fieldErrors[name],
   });
 
   return (
-    <div className="auth container">
-      <div className="card auth__card">
-        <h1 className="auth__title">Create your account</h1>
-        <p className="muted auth__sub">Free to join. You can post gigs or bid on them.</p>
+    <AuthCard
+      title="Join Hirely"
+      subtitle="Free to join. Post gigs or bid on them."
+      altText="Already on Hirely? Sign in"
+      altTo="/login"
+      altState={location.state}
+    >
+      {error && (
+        <div className="rest-alert" role="alert">
+          {error}
+        </div>
+      )}
 
-        {error && <div className="alert alert--error" role="alert">{error}</div>}
-
-        <form className="form" onSubmit={onSubmit} noValidate>
-          <fieldset className="role-picker">
-            <legend className="label">How will you use Hirely?</legend>
-            <div className="role-picker__options">
-              {ROLES.map((r) => (
-                <label key={r.value} className="role-option">
-                  <input
-                    className="role-option__input"
-                    type="radio"
-                    name="role"
-                    value={r.value}
-                    checked={role === r.value}
-                    onChange={() => setRole(r.value)}
-                  />
-                  <span className="role-option__body">
-                    <span className="role-option__title">{r.title}</span>
-                    <span className="role-option__text">{r.text}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="field">
-            <label className="label" htmlFor="register-name">Full name</label>
-            <input {...fieldProps('name')} type="text" autoComplete="name" maxLength={50} />
-            {fieldErrors.name && <p className="field-error" id="register-name-error">{fieldErrors.name}</p>}
+      <form className="rest-auth__form" onSubmit={onSubmit} noValidate>
+        <fieldset className="rest-roles">
+          <legend className="rest-roles__legend">How will you use Hirely?</legend>
+          <div className="rest-roles__grid">
+            {ROLES.map((r) => (
+              <RoleCard key={r.value} name="role" {...r} checked={role === r.value} onChange={setRole} />
+            ))}
           </div>
+        </fieldset>
 
-          <div className="field">
-            <label className="label" htmlFor="register-email">Email</label>
-            <input {...fieldProps('email')} type="email" autoComplete="email" />
-            {fieldErrors.email && <p className="field-error" id="register-email-error">{fieldErrors.email}</p>}
-          </div>
+        <FloatingField {...field('name')} label="Full name" type="text" autoComplete="name" maxLength={50} />
+        <FloatingField {...field('email')} label="Email" type="email" autoComplete="email" />
+        <FloatingField
+          {...field('password')}
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          hint="At least 6 characters."
+          revealable
+        />
 
-          <div className="field">
-            <label className="label" htmlFor="register-password">Password</label>
-            <input {...fieldProps('password')} type="password" autoComplete="new-password" />
-            {fieldErrors.password ? (
-              <p className="field-error" id="register-password-error">{fieldErrors.password}</p>
-            ) : (
-              <p className="hint" id="register-password-hint">At least 6 characters.</p>
-            )}
-          </div>
-
-          <button type="submit" className="btn btn--primary btn--block btn--lg" disabled={submitting}>
-            {submitting ? 'Creating your account…' : 'Create account'}
-          </button>
-        </form>
-
-        <p className="auth__switch">
-          Already have an account?{' '}
-          <Link className="link" to="/login" state={location.state}>Log in</Link>
-        </p>
-      </div>
-    </div>
+        <Button type="submit" block className="rest-auth__btn" loading={submitting} loadingText="Creating your account…">
+          Create account
+        </Button>
+      </form>
+    </AuthCard>
   );
 }

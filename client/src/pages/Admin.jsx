@@ -1,117 +1,44 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Briefcase, CircleCheck, Gavel, Search, Star, UserX, Users } from 'lucide-react';
 import api from '../api/axios';
-import Avatar from '../components/Avatar';
-import EmptyState from '../components/EmptyState';
-import Loader from '../components/Loader';
-import Pagination from '../components/Pagination';
-import PriceTag from '../components/PriceTag';
-import StatusPill from '../components/StatusPill';
+import { Layout } from '../components/shell';
+import { BudgetBadge, Button, Card, EmptyState, Modal, Pagination, SkeletonRow } from '../components/ui';
+import AdminUserRow from '../components/rest/AdminUserRow';
+import StatTile, { StatTilesSkeleton } from '../components/rest/StatTile';
 import useDebounce from '../utils/useDebounce';
-import { formatDate, plural, sameId } from '../utils/format';
-
-const ROLE_LABEL = { client: 'Client', freelancer: 'Freelancer', admin: 'Admin' };
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M16 16l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { plural, sameId } from '../utils/format';
 
 // Session 6: every number here comes from one aggregation endpoint (GET /admin/stats)
-function StatCards({ stats }) {
-  if (!stats) {
-    return (
-      <div className="stats admin-stats" aria-hidden="true">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="stat">
-            <span className="skeleton skeleton--text" />
-            <span className="skeleton admin-stat-skeleton" />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
+function StatTiles({ stats }) {
+  if (!stats) return <StatTilesSkeleton count={6} />;
   const { users, gigs, bids, reviews, completedValue } = stats;
   return (
-    <div className="stats admin-stats">
-      <div className="stat stat--ink">
-        <span className="stat__label">Users</span>
-        <span className="stat__value">{users.total}</span>
-        <span className="stat__hint">
-          {plural(users.client, 'client')} · {plural(users.freelancer, 'freelancer')} · {plural(users.admin, 'admin')}
-        </span>
-      </div>
-      <div className="stat stat--rust">
-        <span className="stat__label">Suspended accounts</span>
-        <span className="stat__value">{users.banned}</span>
-        <span className="stat__hint">Can't log in until restored</span>
-      </div>
-      <div className="stat stat--teal">
-        <span className="stat__label">Gigs</span>
-        <span className="stat__value">{gigs.total}</span>
-        <span className="stat__hint">
-          {gigs.open} open · {gigs['in-progress']} in progress · {gigs.completed} completed · {gigs.cancelled} cancelled
-        </span>
-      </div>
-      <div className="stat stat--marigold">
-        <span className="stat__label">Bids</span>
-        <span className="stat__value">{bids}</span>
-        <span className="stat__hint">All bids ever placed</span>
-      </div>
-      <div className="stat stat--marigold">
-        <span className="stat__label">Reviews</span>
-        <span className="stat__value">{reviews}</span>
-        <span className="stat__hint">Left by clients and freelancers</span>
-      </div>
-      <div className="stat stat--teal">
-        <span className="stat__label">Value of completed gigs</span>
-        <span className="admin-stat-tag">
-          <PriceTag amount={completedValue} size="md" />
-        </span>
-        <span className="stat__hint">Sum of their budgets</span>
-      </div>
+    <div className="rest-stats rest-stats--admin">
+      <StatTile
+        icon={Users}
+        label="Users"
+        value={users.total}
+        hint={`${plural(users.client, 'client')} · ${plural(users.freelancer, 'freelancer')} · ${plural(users.admin, 'admin')}`}
+      />
+      <StatTile icon={UserX} tone="danger" label="Suspended accounts" value={users.banned} hint="Can't sign in until restored" />
+      <StatTile
+        icon={Briefcase}
+        label="Gigs"
+        value={gigs.total}
+        hint={`${gigs.open} open · ${gigs['in-progress']} in progress · ${gigs.completed} completed · ${gigs.cancelled} cancelled`}
+      />
+      <StatTile icon={Gavel} label="Bids" value={bids} hint="All bids ever placed" />
+      <StatTile icon={Star} label="Reviews" value={reviews} hint="Left by clients and freelancers" />
+      <StatTile
+        icon={CircleCheck}
+        tone="money"
+        label="Value of completed gigs"
+        value={<BudgetBadge amount={completedValue} size="md" />}
+        hint="Sum of their budgets"
+      />
     </div>
-  );
-}
-
-function UserRow({ user, busy, onToggle }) {
-  const isAdmin = user.role === 'admin';
-  return (
-    <tr>
-      <td>
-        <Link className="person admin-user" to={`/users/${user._id}`}>
-          <Avatar user={user} size="sm" decorative />
-          <span className="person__name">{user.name}</span>
-        </Link>
-      </td>
-      <td className="admin-email">{user.email}</td>
-      <td>{ROLE_LABEL[user.role] || user.role}</td>
-      <td>
-        <StatusPill status={user.isBanned ? 'suspended' : 'active'} />
-      </td>
-      <td className="admin-date">{formatDate(user.createdAt)}</td>
-      <td className="table__num">
-        {isAdmin ? (
-          <span className="muted small">Can't be suspended</span>
-        ) : (
-          <button
-            type="button"
-            className={`btn btn--sm ${user.isBanned ? 'btn--secondary' : 'btn--danger-ghost'}`}
-            onClick={() => onToggle(user)}
-            disabled={busy}
-            aria-label={`${user.isBanned ? 'Restore' : 'Suspend'} ${user.name}`}
-          >
-            {busy ? 'Saving…' : user.isBanned ? 'Restore' : 'Suspend'}
-          </button>
-        )}
-      </td>
-    </tr>
   );
 }
 
@@ -127,6 +54,8 @@ export default function Admin() {
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState(null);
+  const [confirming, setConfirming] = useState(null); // the user waiting for "Suspend" confirmation
+  const cancelRef = useRef(null);
 
   // Session 14: debounced search, kept in the URL (?q=) so it survives a refresh
   const [search, setSearch] = useState(q);
@@ -194,14 +123,8 @@ export default function Admin() {
     });
   };
 
-  // Suspend asks first; restore is harmless so it runs straight away
+  // PATCH toggles isBanned; the row updates in place and the stats refresh
   const toggleBan = async (u) => {
-    if (
-      !u.isBanned &&
-      !window.confirm(`Suspend ${u.name}? They won't be able to log in or use Hirely until you restore the account.`)
-    ) {
-      return;
-    }
     setBusyId(u._id);
     try {
       const { data: res } = await api.patch(`/admin/users/${u._id}/ban`);
@@ -213,46 +136,52 @@ export default function Admin() {
       toast.error(err.message);
     } finally {
       setBusyId(null);
+      setConfirming(null);
     }
   };
+
+  // Suspend asks first (in the Modal); restore is harmless so it runs straight away
+  const onToggle = (u) => (u.isBanned ? toggleBan(u) : setConfirming(u));
 
   const { users, pages, total } = data;
   const loading = status === 'loading';
 
   return (
-    <div className="container page">
-      <div className="page-head">
-        <div>
-          <h1 className="page-title">Admin</h1>
-          <p className="page-sub">Platform numbers and user accounts.</p>
-        </div>
-      </div>
-
-      {statsError ? (
-        <div className="alert alert--error admin-alert" role="alert">
-          Couldn't load the platform stats. {statsError}.{' '}
-          <button type="button" className="btn btn--secondary btn--sm" onClick={loadStats}>
-            Try again
-          </button>
-        </div>
-      ) : (
-        <StatCards stats={stats} />
-      )}
-
-      <section aria-labelledby="admin-users-title">
-        <div className="admin-users-head">
-          <div>
-            <h2 id="admin-users-title" className="card__title">Users</h2>
-            <p className="muted small" aria-live="polite">
-              {status === 'ready' && (q ? `${plural(total, 'match', 'matches')} for "${q}"` : plural(total, 'account'))}
-            </p>
+    <Layout variant="full" className="rest-admin">
+      <Card padded={false} className="rest-admin-head">
+        <div className="rest-dash-head">
+          <div className="rest-dash-head__text">
+            <h1 className="rest-dash-head__title">Admin</h1>
+            <p className="rest-dash-head__sub">Platform numbers and user accounts.</p>
           </div>
-          <div className="admin-search">
-            <label className="sr-only" htmlFor="admin-search">Search users by name or email</label>
-            <span className="admin-search__icon"><SearchIcon /></span>
+        </div>
+        <div className="rest-dash-card__stats">
+          {statsError ? (
+            <div className="rest-alert rest-alert--row" role="alert">
+              <span>Couldn't load the platform stats. {statsError}.</span>
+              <Button variant="secondary" size="sm" onClick={loadStats}>
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <StatTiles stats={stats} />
+          )}
+        </div>
+      </Card>
+
+      <Card
+        padded={false}
+        className="rest-admin-users"
+        title="Users"
+        action={
+          <div className="rest-search">
+            <label className="ui-sr-only" htmlFor="admin-search">
+              Search users by name or email
+            </label>
+            <Search className="rest-search__icon" size={16} aria-hidden="true" focusable="false" />
             <input
               id="admin-search"
-              className="input admin-search__input"
+              className="rest-search__input"
               type="search"
               placeholder="Search by name or email"
               value={search}
@@ -260,60 +189,87 @@ export default function Admin() {
               autoComplete="off"
             />
           </div>
-        </div>
+        }
+      >
+        <p className="rest-admin-users__count" aria-live="polite">
+          {status === 'ready' && (q ? `${plural(total, 'match', 'matches')} for "${q}"` : plural(total, 'account'))}
+        </p>
 
         {status === 'error' ? (
           <EmptyState
             compact
             title="Couldn't load users"
             text={`${error}.`}
-            action={
-              <button type="button" className="btn btn--primary" onClick={() => setAttempt((n) => n + 1)}>
-                Try again
-              </button>
-            }
+            action={<Button onClick={() => setAttempt((n) => n + 1)}>Try again</Button>}
           />
         ) : loading && !users.length ? (
-          <Loader label="Loading users" />
+          <div className="rest-admin-users__state">
+            <SkeletonRow count={6} label="Loading users" />
+          </div>
         ) : users.length === 0 ? (
           <EmptyState
             compact
+            icon={Search}
             title={q ? `No users match "${q}"` : 'No users yet'}
             text={q ? 'Check the spelling, or search by email address instead.' : 'New sign-ups will appear here.'}
             action={
               q && (
-                <button type="button" className="btn btn--secondary" onClick={() => setSearch('')}>
+                <Button variant="secondary" onClick={() => setSearch('')}>
                   Clear search
-                </button>
+                </Button>
               )
             }
           />
         ) : (
           <>
-            <div className={`table-wrap${loading ? ' is-busy' : ''}`} aria-busy={loading}>
-              <table className="table admin-table">
-                <caption className="sr-only">User accounts, newest first</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Role</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Joined</th>
-                    <th scope="col" className="table__num">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <UserRow key={u._id} user={u} busy={busyId === u._id} onToggle={toggleBan} />
-                  ))}
-                </tbody>
-              </table>
+            <div className="rest-admin-cols" aria-hidden="true">
+              <span>Name</span>
+              <span>Role</span>
+              <span>Joined</span>
+              <span>Status</span>
+              <span />
             </div>
-            <Pagination page={page} pages={pages} onChange={goToPage} />
+            <ul
+              className={`rest-admin-list${loading ? ' is-busy' : ''}`}
+              aria-busy={loading}
+              aria-label="User accounts, newest first"
+            >
+              {users.map((u) => (
+                <AdminUserRow key={u._id} user={u} busy={busyId === u._id} onToggle={onToggle} />
+              ))}
+            </ul>
+            <div className="rest-admin-users__pages">
+              <Pagination page={page} pages={pages} onChange={goToPage} />
+            </div>
           </>
         )}
-      </section>
-    </div>
+      </Card>
+
+      <Modal
+        open={Boolean(confirming)}
+        onClose={() => busyId || setConfirming(null)}
+        title={confirming ? `Suspend ${confirming.name}?` : 'Suspend account?'}
+        initialFocusRef={cancelRef}
+        footer={
+          <>
+            <Button ref={cancelRef} variant="tertiary" onClick={() => setConfirming(null)} disabled={Boolean(busyId)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => toggleBan(confirming)}
+              loading={Boolean(busyId)}
+              loadingText="Suspending…"
+            >
+              Suspend
+            </Button>
+          </>
+        }
+      >
+        <p className="rest-modal-text">
+          They won't be able to sign in or use Hirely until you restore the account. You can restore it at any time.
+        </p>
+      </Modal>
+    </Layout>
   );
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import Loader from '../components/Loader';
+import { Button } from '../components/ui';
+import AuthCard, { AuthCardSkeleton } from '../components/rest/AuthCard';
+import FloatingField from '../components/rest/FloatingField';
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
-// Where to go after logging in: back to the protected page that sent us here (Session 7)
+// Where to go after signing in: back to the protected page that sent us here (Session 7)
 const destination = (state) => {
   const from = state?.from;
   if (!from?.pathname || from.pathname === '/login') return '/dashboard';
@@ -24,7 +26,7 @@ export default function Login() {
 
   const dest = destination(location.state);
 
-  if (loading) return <Loader full />;
+  if (loading) return <AuthCardSkeleton />;
   if (user) return <Navigate to={dest} replace />;
 
   const onChange = (e) => {
@@ -58,57 +60,46 @@ export default function Login() {
   };
 
   return (
-    <div className="auth container">
-      <div className="card auth__card">
-        <h1 className="auth__title">Log in to Hirely</h1>
-        <p className="muted auth__sub">Pick up where you left off.</p>
+    <AuthCard
+      title="Sign in"
+      subtitle="Stay on top of your gigs, bids and messages."
+      altText="New to Hirely? Join now"
+      altTo="/register"
+      altState={location.state}
+    >
+      {error && (
+        <div className="rest-alert" role="alert">
+          {error}
+        </div>
+      )}
 
-        {error && <div className="alert alert--error" role="alert">{error}</div>}
-
-        <form className="form" onSubmit={onSubmit} noValidate>
-          <div className="field">
-            <label className="label" htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              className="input"
-              type="email"
-              name="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={onChange}
-              aria-invalid={Boolean(fieldErrors.email)}
-              aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
-              autoFocus
-            />
-            {fieldErrors.email && <p className="field-error" id="login-email-error">{fieldErrors.email}</p>}
-          </div>
-
-          <div className="field">
-            <label className="label" htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              className="input"
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              value={form.password}
-              onChange={onChange}
-              aria-invalid={Boolean(fieldErrors.password)}
-              aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
-            />
-            {fieldErrors.password && <p className="field-error" id="login-password-error">{fieldErrors.password}</p>}
-          </div>
-
-          <button type="submit" className="btn btn--primary btn--block btn--lg" disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Log in'}
-          </button>
-        </form>
-
-        <p className="auth__switch">
-          New to Hirely?{' '}
-          <Link className="link" to="/register" state={location.state}>Create an account</Link>
-        </p>
-      </div>
-    </div>
+      <form className="rest-auth__form" onSubmit={onSubmit} noValidate>
+        <FloatingField
+          id="login-email"
+          label="Email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          value={form.email}
+          onChange={onChange}
+          error={fieldErrors.email}
+          autoFocus
+        />
+        <FloatingField
+          id="login-password"
+          label="Password"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          value={form.password}
+          onChange={onChange}
+          error={fieldErrors.password}
+          revealable
+        />
+        <Button type="submit" block className="rest-auth__btn" loading={submitting} loadingText="Signing in…">
+          Sign in
+        </Button>
+      </form>
+    </AuthCard>
   );
 }
