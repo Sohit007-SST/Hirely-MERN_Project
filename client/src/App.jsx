@@ -6,7 +6,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { UnreadMessagesProvider } from './context/UnreadMessagesContext';
 import AppShell from './components/shell/AppShell';
-import Loader from './components/Loader';
+import { SkeletonPage } from './components/ui';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Session 14: every page is its own lazily loaded chunk
@@ -24,8 +24,6 @@ const Chat = lazy(() => import('./pages/Chat'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Admin = lazy(() => import('./pages/Admin'));
 const NotFound = lazy(() => import('./pages/NotFound'));
-// TEMPORARY: removed in redesign Phase 8 (shows every components/ui primitive)
-const UiPreview = lazy(() => import('./pages/UiPreview'));
 
 // New page, top of the window (browsers keep the old scroll position in SPAs)
 function ScrollToTop() {
@@ -45,7 +43,7 @@ export default function App() {
             <ScrollToTop />
             {/* Redesign Phase 2: top nav / mobile bars around every page */}
             <AppShell>
-              <Suspense fallback={<Loader full />}>
+              <Suspense fallback={<SkeletonPage />}>
                 <Routes>
                   {/* Public */}
                   <Route path="/" element={<Home />} />
@@ -54,8 +52,6 @@ export default function App() {
                   <Route path="/gigs" element={<Gigs />} />
                   <Route path="/freelancers" element={<Freelancers />} />
                   <Route path="/users/:id" element={<Profile />} />
-                  {/* TEMPORARY: removed in redesign Phase 8 */}
-                  <Route path="/ui-preview" element={<UiPreview />} />
 
                   {/* Session 7: client-only routes (same GigForm for create and edit) */}
                   <Route

@@ -24,7 +24,7 @@ Author: **Sohit Kumar Nagar**
 - **Profiles**: avatar upload to Cloudinary, headline, bio, skills, hourly rate, follower counts, reviews.
 - **Dashboards**: the client sees gigs taking bids, in progress and completed; the freelancer sees pending bids, hires and earnings.
 - **Admin**: platform stats (aggregation pipelines) and a searchable users table with suspend / restore.
-- **Design**: the marigold price "swing-tag" on every budget, full dark mode, responsive down to 360 px, keyboard focus and reduced-motion support.
+- **Design**: a professional-network style UI (top nav with badges, three-column feed, two-pane gig search, docked messaging) in a calm teal theme with amber budget badges, full dark mode, responsive down to 360 px, keyboard focus and reduced-motion support.
 
 ---
 
@@ -40,12 +40,12 @@ Author: **Sohit Kumar Nagar**
 | MERN-6 | Models and data flow | 7 models in `server/src/models/` (`User, Gig, Bid, Review, Conversation, Message, Notification`) with validation, refs and indexes |
 | MERN-7 | JWT auth and authorization | `server/src/middlewares/auth.js` (`protect`, `authorize(...roles)`), `server/src/utils/generateToken.js`, bcrypt hook in `server/src/models/User.js`, `server/src/controllers/authController.js`; client `client/src/context/AuthContext.jsx`, `client/src/components/ProtectedRoute.jsx` |
 | MERN-8 | Reusable controllers, custom middleware, Cloudinary | `server/src/utils/asyncHandler.js`, `server/src/utils/ApiError.js`, `server/src/middlewares/{validate,errorHandler,upload}.js`, `server/src/validators/index.js`, `server/src/config/cloudinary.js`, avatar upload in `server/src/controllers/userController.js`, `client/src/pages/Settings.jsx` |
-| MERN-9 | Posts API + dynamic feed | Gigs API with search, filters, sort and pagination in `server/src/controllers/gigController.js`, `server/src/utils/pagination.js`; `client/src/pages/Gigs.jsx`, `client/src/pages/GigDetails.jsx`, `client/src/components/GigCard.jsx` |
+| MERN-9 | Posts API + dynamic feed | Gigs API with search, filters, sort and pagination in `server/src/controllers/gigController.js`, `server/src/utils/pagination.js`; `client/src/pages/Gigs.jsx`, `client/src/pages/GigDetails.jsx`, `client/src/pages/Home.jsx` (feed of `components/home/GigPost.jsx`) |
 | MERN-10 | Follow / unfollow | `followUser` in `server/src/controllers/userController.js`, `followers` / `following` on `User`; Follow button and counts in `client/src/pages/Profile.jsx` |
-| MERN-11 | Like + comment APIs | `toggleLike`, `addComment`, `deleteComment` in `server/src/controllers/gigController.js`; reviews in `server/src/controllers/reviewController.js` + `Review.calcAverage` aggregation in `server/src/models/Review.js`; `client/src/pages/GigDetails.jsx`, `client/src/components/StarRating.jsx` |
+| MERN-11 | Like + comment APIs | `toggleLike`, `addComment`, `deleteComment` in `server/src/controllers/gigController.js`; reviews in `server/src/controllers/reviewController.js` + `Review.calcAverage` aggregation in `server/src/models/Review.js`; `client/src/pages/GigDetails.jsx` (`components/gigs/QaCard.jsx`, `ReviewCard.jsx`), `client/src/components/ui/StarRating.jsx` |
 | MERN-12 | Socket.io messaging + notifications | `server/src/socket/index.js` (JWT handshake, user rooms, online map), `server/src/events/listeners.js`, `client/src/context/SocketContext.jsx`, `client/src/pages/Notifications.jsx` |
 | MERN-13 | Finished chat, edge cases, persistence | `server/src/controllers/chatController.js` (persisted messages, unread aggregation, cursor pagination, read marking), `server/src/models/{Conversation,Message}.js`, `client/src/pages/Chat.jsx` (typing indicator, online status, unread badges, load older, dedupe) |
-| MERN-14 | Performance | `React.lazy` + `Suspense` in `client/src/App.jsx`, `manualChunks` in `client/vite.config.js`, `memo` in `client/src/components/GigCard.jsx`, `client/src/utils/useDebounce.js`, `loading="lazy"` in `client/src/components/Avatar.jsx`; server `compression` in `app.js`, `server/src/middlewares/cache.js`, indexes in the models, `.lean()`, `select('-comments')` and `Promise.all` in the controllers |
+| MERN-14 | Performance | `React.lazy` + `Suspense` in `client/src/App.jsx`, `manualChunks` in `client/vite.config.js`, `memo` in `client/src/components/home/GigPost.jsx` and `components/gigs/GigListRow.jsx`, `client/src/utils/useDebounce.js`, `loading="lazy"` in `client/src/components/ui/Avatar.jsx`, skeleton loading states in `components/ui/Skeleton.jsx`; server `compression` in `app.js`, `server/src/middlewares/cache.js`, indexes in the models, `.lean()`, `select('-comments')` and `Promise.all` in the controllers |
 | MERN-15 | Gemini API + prompt engineering | `server/src/controllers/aiController.js` (REST call with `fetch`, two structured prompts), `server/src/routes/aiRoutes.js` (per-user AI rate limit); "Write proposal with Gemini" in `client/src/pages/GigDetails.jsx`, "Improve with Gemini" in `client/src/pages/GigForm.jsx` |
 | MERN-16 | Deployment, env vars, CI/CD | `render.yaml`, `client/vercel.json`, `server/.env.example`, `client/.env.example`, `.github/workflows/ci.yml`, `server/scripts/check.js`, required-env check in `server/src/server.js` |
 
@@ -241,9 +241,13 @@ hirely/
     └── src/
         ├── main.jsx, App.jsx, index.css
         ├── api/axios.js
-        ├── context/             AuthContext.jsx, SocketContext.jsx
-        ├── components/          Navbar, ProtectedRoute, Loader, Avatar, PriceTag, StatusPill,
-        │                        StarRating, Pagination, EmptyState, GigCard
+        ├── context/             AuthContext.jsx, SocketContext.jsx, UnreadMessagesContext.jsx
+        ├── components/
+        │   ├── ui/              Button, Card, Avatar, Cover, Modal, Dropdown, Tabs, FilterPills, Badge,
+        │   │                    Skeleton, SeeMore, BudgetBadge, StatusPill, StarRating, EmptyState, Pagination
+        │   ├── shell/           AppShell, TopNav, MobileTopBar, BottomTabBar, MeMenu, Layout, ...
+        │   ├── home/ gigs/ people/ messaging/ rest/   page-specific pieces
+        │   └── ProtectedRoute.jsx
         ├── pages/               Home, Login, Register, Gigs, GigDetails, GigForm, Freelancers,
         │                        Profile, Settings, Dashboard, Chat, Notifications, Admin, NotFound
         └── utils/               format.js, useDebounce.js

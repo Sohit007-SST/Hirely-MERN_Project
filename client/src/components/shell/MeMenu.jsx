@@ -2,6 +2,7 @@
 // "View profile" pill), then Edit profile, Dashboard, Admin (admins only), a divider and Sign out.
 // Also exports MeHeader and meLinks(user), which the mobile MeSheet reuses.
 // Props: { user }
+import { useId } from 'react';
 import { ChevronDown, LayoutDashboard, LogOut, Settings, Shield } from 'lucide-react';
 import { Avatar, Button, Dropdown } from '../ui';
 import useSignOut from './useSignOut';
@@ -21,16 +22,19 @@ export function meLinks(user) {
 // Avatar + name + headline, then a full-width "View profile" outline pill
 // (in the Dropdown the pill becomes an arrow-key menu item; onNavigate closes the mobile sheet)
 export function MeHeader({ user, onNavigate }) {
+  // The name/headline are plain text inside role="menu" (screen readers skip it there),
+  // so they are hidden and attached to the "View profile" item as its description instead
+  const descId = useId();
   return (
     <div className="shell-me">
-      <div className="shell-me__who">
+      <div className="shell-me__who" id={descId} aria-hidden="true">
         <Avatar user={user} size={56} decorative />
         <div className="shell-me__text">
           <strong className="shell-me__name">{user.name}</strong>
           <span className="shell-me__headline">{user.headline || ROLE_LABEL[user.role] || 'Member'}</span>
         </div>
       </div>
-      <Button variant="secondary" size="sm" block to={`/users/${user._id}`} onClick={onNavigate}>
+      <Button variant="secondary" size="sm" block to={`/users/${user._id}`} onClick={onNavigate} aria-describedby={descId}>
         View profile
       </Button>
     </div>

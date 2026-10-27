@@ -8,8 +8,9 @@ export default function useSignOut() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   return useCallback(() => {
+    // Leave protected pages first, otherwise ProtectedRoute redirects to /login
+    navigate('/', { replace: true });
     logout();
-    navigate('/');
     toast.success('You are signed out');
   }, [logout, navigate]);
 }
