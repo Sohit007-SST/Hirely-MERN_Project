@@ -1,1 +1,833 @@
-/* Messaging (redesign Phase 6) - merged into index.css in redesign Phase 8 */
+/* Messaging (redesign Phase 6) - merged into index.css in redesign Phase 8
+   Messaging page (pages/Chat.jsx) and the docked messaging bar (components/messaging/DockedMessaging.jsx).
+   Every class starts with "msg-". Colours come only from the tokens in index.css :root. */
+
+/* --- Page frame: one card that fills the screen under the nav ------------------------------- */
+/* Desktop: 24px above (Layout) and 24px below; .main has 64px bottom padding, so pull 40px back */
+.msg-layout {
+  margin-bottom: -40px;
+}
+
+.msg-card {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  height: calc(100vh - var(--nav-h) - 48px);
+  height: calc(100dvh - var(--nav-h) - 48px);
+  min-height: 480px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* Error / no-conversations states: the EmptyState is its own card */
+.msg-single {
+  min-width: 0;
+}
+
+.msg-card__list {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.msg-card__thread {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+/* --- Conversation list ------------------------------------------------------------------------ */
+.msg-list {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 0;
+}
+
+.msg-card--loading > .msg-list {
+  border-right: 1px solid var(--border);
+}
+
+.msg-list__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.msg-list__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.msg-list__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.msg-list__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.msg-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.msg-search__icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+.msg-search__input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.msg-search__input::placeholder {
+  color: var(--text-2);
+  opacity: 1;
+}
+
+.msg-search__input:hover {
+  border-color: var(--border-strong);
+}
+
+.msg-search__input:focus {
+  background: var(--surface);
+  border-color: var(--focus);
+}
+
+.msg-list__scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.msg-list__scroll > .ui-skel-list {
+  padding: 8px 16px;
+}
+
+.msg-list__empty {
+  margin: 0;
+  padding: 24px 16px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+/* One conversation row: avatar | name + date / preview + badge / gig tag */
+.msg-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px 12px 12px;
+  border: 0;
+  border-left: 4px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.msg-row:hover {
+  background-color: var(--surface-2);
+}
+
+.msg-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.msg-row.is-active {
+  border-left-color: var(--primary);
+  background-color: var(--primary-soft);
+}
+
+.msg-row__body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msg-row__top,
+.msg-row__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.msg-row__name,
+.msg-row__preview,
+.msg-row__gig {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msg-row__name {
+  font-size: var(--fs-md);
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.msg-row__time {
+  flex-shrink: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.msg-row__preview {
+  flex: 1 1 auto;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.43;
+}
+
+.msg-row__gig {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0 8px;
+  border-radius: var(--radius-input);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  line-height: 20px;
+}
+
+.msg-row.is-active .msg-row__gig {
+  background: var(--surface);
+}
+
+/* Unread: bold name and preview */
+.msg-row--unread .msg-row__name {
+  font-weight: 700;
+}
+
+.msg-row--unread .msg-row__preview,
+.msg-row--unread .msg-row__time {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* --- Open conversation -------------------------------------------------------------------------- */
+.msg-thread {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+.msg-thread__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.msg-thread__head--compact {
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 8px 8px 12px;
+}
+
+.msg-thread__back {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin-left: -8px;
+  border-radius: 50%;
+  color: var(--text);
+  transition: background-color 150ms ease;
+}
+
+.msg-thread__back:hover {
+  background-color: var(--surface-2);
+}
+
+.msg-thread__who {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msg-thread__name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msg-thread__head--compact .msg-thread__name {
+  font-size: var(--fs-sm);
+}
+
+a.msg-thread__name:hover,
+.msg-thread__gig:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.msg-thread__meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.msg-thread__status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.msg-thread__status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--text-2);
+  border-radius: 50%;
+}
+
+.msg-thread__status.is-online {
+  color: var(--success);
+}
+
+.msg-thread__status.is-online::before {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.msg-thread__gig {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+}
+
+.msg-thread__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.msg-thread__state {
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+/* Message log: date separators and groups, all left-aligned */
+/* position: relative keeps screen-reader-only spans inside the scroll box (else they stretch the page) */
+.msg-log {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 16px 16px 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.msg-log:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.msg-log__older,
+.msg-log__start {
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.msg-log__start,
+.msg-log__empty {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.msg-log__empty {
+  margin: 0;
+  padding: 32px 16px;
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+.msg-log__list,
+.msg-log__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.msg-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.msg-day::before,
+.msg-day::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--border);
+}
+
+.msg-group {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.msg-group__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msg-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+}
+
+.msg-group__name {
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.msg-group__name:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.msg-group__time {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.msg-line {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Typing: three dots that bounce, then "Priya is typing" */
+.msg-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 0 16px 0 68px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.msg-thread--compact .msg-typing {
+  padding-left: 12px;
+}
+
+.msg-typing__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+
+.msg-typing__dots > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-2);
+  animation: msg-typing-bounce 1.2s ease-in-out infinite;
+}
+
+.msg-typing__dots > span:nth-child(2) { animation-delay: 0.15s; }
+.msg-typing__dots > span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes msg-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+/* Composer: auto-growing box (max 5 lines), hint and Send pill underneath */
+.msg-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.msg-composer__input {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  max-height: 118px; /* 5 lines of 20px + 16px padding + 2px border */
+  padding: 8px 12px;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-input);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  line-height: 20px;
+  resize: none;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.msg-composer__input::placeholder {
+  color: var(--text-2);
+  opacity: 1;
+}
+
+.msg-composer__input:focus {
+  background: var(--surface);
+  border-color: var(--focus);
+}
+
+.msg-composer__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.msg-composer__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.msg-composer__hint {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+
+.msg-composer__bar > .ui-btn {
+  margin-left: auto;
+}
+
+/* --- 768-991px: two panes between the mobile top bar and the bottom tab bar ------------------ */
+@media (max-width: 991.98px) {
+  /* .main--tabbar has var(--tabbar-space) + 24px bottom padding; keep 16px under the card */
+  .msg-layout {
+    margin-bottom: -8px;
+  }
+
+  .msg-card {
+    grid-template-columns: 300px minmax(0, 1fr);
+    height: calc(100vh - var(--nav-h) - var(--tabbar-space) - 32px);
+    height: calc(100dvh - var(--nav-h) - var(--tabbar-space) - 32px);
+    min-height: 400px;
+  }
+}
+
+/* --- Under 768px: the list only; an open conversation is a full-screen thread with a back arrow --- */
+@media (max-width: 767.98px) {
+  .msg-layout {
+    margin-bottom: 0;
+    padding: 0;
+  }
+
+  .msg-card {
+    display: block;
+    height: auto;
+    min-height: 0;
+    border-width: 0 0 1px;
+    border-radius: 0;
+  }
+
+  .msg-single {
+    padding: 16px var(--gutter) 0;
+  }
+
+  .msg-card__list,
+  .msg-card--loading > .msg-list {
+    border-right: 0;
+  }
+
+  .msg-list__scroll {
+    overflow: visible;
+  }
+
+  .msg-card:not(.msg-card--open) > .msg-card__thread,
+  .msg-thread--placeholder,
+  .msg-card--open > .msg-card__list {
+    display: none;
+  }
+
+  /* Covers the top bar and the tab bar, like a native chat screen */
+  .msg-card--open > .msg-card__thread {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    height: 100vh;
+    height: 100dvh;
+    background: var(--surface);
+  }
+
+  .msg-thread__back {
+    display: inline-flex;
+  }
+
+  .msg-thread__head {
+    min-height: 64px;
+    padding: 8px 12px;
+  }
+
+  .msg-log {
+    padding: 16px 12px 8px;
+  }
+
+  .msg-typing {
+    padding-left: 64px;
+  }
+
+  .msg-composer {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .msg-composer__hint {
+    display: none;
+  }
+
+  /* 16px so iOS doesn't zoom into the fields */
+  .msg-search__input,
+  .msg-composer__input {
+    font-size: var(--fs-md);
+    line-height: 20px;
+  }
+}
+
+/* --- Compact thread (docked chat window) ------------------------------------------------------- */
+.msg-thread--compact .msg-log {
+  padding: 12px 12px 8px;
+}
+
+.msg-thread--compact .msg-group {
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.msg-thread--compact .msg-group__avatar {
+  --av: 32px;
+}
+
+.msg-thread--compact .msg-composer {
+  padding: 8px 12px 12px;
+}
+
+/* The hint stays for screen readers (aria-describedby) but there is no room for it */
+.msg-thread--compact .msg-composer__hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* --- Docked messaging bar (desktop only; DockedMessaging renders nothing under 992px) ------------ */
+.msg-dock {
+  position: fixed;
+  right: 16px;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none; /* only the bar and windows take clicks, not the gap around them */
+}
+
+.msg-dock__panel,
+.msg-dock__window {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+}
+
+.msg-dock__panel {
+  display: flex;
+  width: 288px;
+  flex-direction: column;
+}
+
+.msg-dock__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  padding: 0 8px 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.msg-dock__bar:hover {
+  background-color: var(--surface-2);
+}
+
+.msg-dock__bar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.msg-dock__label {
+  flex: 1 1 auto;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.msg-dock__chevron {
+  display: inline-flex;
+  color: var(--text-2);
+}
+
+.msg-dock__list {
+  display: flex;
+  height: min(520px, calc(100vh - var(--nav-h) - 96px));
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+.msg-dock__list[hidden] {
+  display: none;
+}
+
+.msg-dock__list .msg-row {
+  padding: 8px 12px 8px 8px;
+}
+
+.msg-dock__list .msg-row__name {
+  font-size: var(--fs-sm);
+}
+
+.msg-dock__list .msg-list__tools {
+  padding: 8px 12px;
+}
+
+.msg-dock__error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+
+.msg-dock__error p {
+  margin: 0;
+}
+
+.msg-dock__window {
+  display: flex;
+  width: 336px;
+  height: min(480px, calc(100vh - var(--nav-h) - 48px));
+  flex-direction: column;
+}
+
+.msg-dock__window:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.msg-dock__window > .msg-thread {
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg-typing__dots > span {
+    animation: none;
+    opacity: 1;
+  }
+}

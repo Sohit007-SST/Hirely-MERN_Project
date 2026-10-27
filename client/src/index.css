@@ -2381,23 +2381,6 @@ hr {
   .main--tabbar {
     padding-bottom: calc(var(--tabbar-space) + 24px);
   }
-
-  /* TEMPORARY (until the Messaging redesign, Phase 6): keep the old chat card above the tab bar */
-  .main--tabbar .chat-page {
-    margin-bottom: -12px;
-  }
-
-  .main--tabbar .chat {
-    height: calc(100vh - var(--nav-h) - var(--tabbar-space) - 32px);
-    height: calc(100dvh - var(--nav-h) - var(--tabbar-space) - 32px);
-  }
-}
-
-@media (max-width: 759.98px) {
-  .main--tabbar .chat {
-    height: calc(100vh - var(--nav-h) - var(--tabbar-space) - 24px);
-    height: calc(100dvh - var(--nav-h) - var(--tabbar-space) - 24px);
-  }
 }
 
 /* --- Page grid (Layout.jsx) ------------------------------------------------------------------ */
