@@ -270,7 +270,7 @@ export default function UiPreview() {
                   <strong>Priya Sharma</strong>
                   <p className="muted small">Founder at a small bakery</p>
                 </div>
-                <Button to="/users/me" size="sm" variant="secondary" block>View profile</Button>
+                <Button to="/settings" size="sm" variant="secondary" block>View profile</Button>
               </div>
             }
             items={[

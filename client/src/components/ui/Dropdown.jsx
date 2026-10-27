@@ -2,7 +2,8 @@
 // Click outside / Escape close it, the trigger reports aria-expanded, arrow keys move through menu items.
 // Props: { trigger: ReactElement (usually a <Button>; gets onClick, aria-expanded, aria-haspopup, aria-controls),
 //          items?: Array<{ label, icon?: LucideIcon, onClick?, to?, href?, danger?: boolean, disabled?: boolean } | { divider: true }>,
-//          header?: ReactNode (shown above the items, e.g. the "Me" mini profile),
+//          header?: ReactNode (shown above the items, e.g. the "Me" mini profile; its links/buttons become
+//                   arrow-key menu items, and choosing one closes the menu),
 //          children?: ReactNode | ({ close }) => ReactNode (free content instead of items),
 //          align?: 'start'|'end' = 'start', label?: string (accessible name of the menu), className? }
 import { cloneElement, useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -14,6 +15,7 @@ export default function Dropdown({ trigger, items, header, children, align = 'st
   const rootRef = useRef(null);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
+  const headerRef = useRef(null);
   const focusFirst = useRef(false);
   const menuId = useId();
   const isMenu = Array.isArray(items);
@@ -42,6 +44,16 @@ export default function Dropdown({ trigger, items, header, children, align = 'st
       document.removeEventListener('keydown', onKey);
     };
   }, [open, close]);
+
+  // Links/buttons inside the header (e.g. the Me menu's "View profile" pill) join the menu:
+  // role="menuitem" + tabIndex -1, so the arrow keys reach them in DOM order like any other item
+  useEffect(() => {
+    if (!open || !isMenu || !headerRef.current) return;
+    focusableIn(headerRef.current).forEach((el) => {
+      el.setAttribute('role', 'menuitem');
+      el.setAttribute('tabindex', '-1');
+    });
+  }, [open, isMenu]);
 
   // On open, move focus into the menu (first item, or the first field of a content panel)
   useEffect(() => {
@@ -116,7 +128,19 @@ export default function Dropdown({ trigger, items, header, children, align = 'st
           aria-label={label}
           onKeyDown={onMenuKeyDown}
         >
-          {header && <div className="ui-dropdown__header">{header}</div>}
+          {header && (
+            // role="none": a plain wrapper inside role="menu"; choosing a link or button in it closes the menu
+            <div
+              ref={headerRef}
+              className="ui-dropdown__header"
+              role={isMenu ? 'none' : undefined}
+              onClick={(e) => {
+                if (e.target.closest('a, button')) close(false);
+              }}
+            >
+              {header}
+            </div>
+          )}
           {isMenu
             ? items.map((item, i) =>
                 item.divider ? (

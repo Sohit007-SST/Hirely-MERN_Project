@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { useUnreadMessages } from '../context/UnreadMessagesContext';
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
 import Loader from '../components/Loader';
@@ -144,6 +145,7 @@ function ThreadError({ error, onRetry }) {
 // One open conversation: header, messages, typing line, send box
 function Thread({ conversationId, conversation, me, onSent }) {
   const { socket, isOnline } = useSocket();
+  const { refreshUnreadMessages } = useUnreadMessages(); // nav Messaging badge (redesign Phase 2)
   const [messages, setMessages] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [status, setStatus] = useState('loading'); // loading | ready | error
@@ -181,6 +183,7 @@ function Thread({ conversationId, conversation, me, onSent }) {
         setMessages((prev) => mergeMessages(prev, data.messages || []));
         setHasMore(Boolean(data.hasMore));
         setStatus('ready');
+        refreshUnreadMessages(); // this fetch marked the thread read, so re-count the nav badge
       })
       .catch((err) => {
         if (!active) return;

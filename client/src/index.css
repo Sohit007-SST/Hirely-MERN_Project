@@ -18,6 +18,8 @@
    Data      .table-wrap > .table (.table__num for right-aligned numbers)
              .stats > .stat (.stat__label .stat__value .stat__hint) + .stat--teal|--marigold|--rust|--ink
    Nav       .tabs > .tab (.is-active or aria-selected="true")  <Pagination>  .badge (or <Badge>)
+   Shell     components/shell: <AppShell> (nav bars + <main>), <Layout variant left right> -> .shell-layout*,
+             see section 13 "App shell"
    Tokens    .chips > .chip (.chip--more, .chip--accent)  <StatusPill>  <BudgetBadge>  <StarRating>
    People    <Avatar>  .person > avatar + .person__name (+ .person__sub)
              .person-card  .person-card__name (avatar + <span> name; span:not(.ui-avatar) truncates)
@@ -87,6 +89,11 @@
   --container: 1128px;
   --gutter: 16px;
   --nav-h: 52px;
+  --tabbar-h: 56px; /* mobile bottom tab bar */
+  --tabbar-space: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  --rail-left: 225px; /* Layout.jsx columns */
+  --rail-right: 300px;
+  --layout-gap: 24px;
 
   /* Legacy aliases so pages not yet redesigned pick up the new theme.
      TEMPORARY: removed in redesign Phase 8 once every page uses the tokens above. */
@@ -686,7 +693,7 @@ hr {
 .ui-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 32px;
   padding: 0 12px;
   border: 1px solid var(--border-strong);
@@ -720,7 +727,7 @@ hr {
 
 .ui-pill__count {
   min-width: 20px;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--text);
@@ -741,7 +748,7 @@ hr {
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
+  padding: 0 4px;
   border-radius: var(--radius-pill);
   background: var(--danger);
   color: var(--on-danger);
@@ -1922,269 +1929,523 @@ hr {
   text-overflow: ellipsis;
 }
 
-/* ---------------------------------------------------------------------------
-   13. Navbar + hamburger
-   ------------------------------------------------------------------------ */
-.navbar {
+/* ===========================================================================
+   13. App shell (redesign Phase 2) - styles for components/shell/*.jsx
+   Desktop (>= 992px): .shell-topnav, 52px, stuck to the top, content centred at 1128px.
+   Mobile (< 992px):   .shell-mobilebar on top + .shell-tabbar fixed at the bottom (56px + safe area);
+                       <main class="main main--tabbar"> gets bottom padding so nothing hides behind it.
+   Page grid:          .shell-layout (Layout.jsx) - three / two-right / two-left / full.
+   Colours come only from the tokens in section 1.
+   =========================================================================== */
+
+/* --- Bars: shared frame ------------------------------------------------------ */
+.shell-topnav,
+.shell-mobilebar {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  border-bottom: 1px solid var(--line);
-  -webkit-backdrop-filter: saturate(1.4) blur(10px);
-  backdrop-filter: saturate(1.4) blur(10px);
+  height: var(--nav-h); /* 52px including the border, so 100vh - var(--nav-h) is exactly the space below */
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 
-@supports not (background: color-mix(in srgb, red 50%, blue)) {
-  .navbar { background: var(--surface); }
-}
-
-.navbar__inner {
+.shell-bar {
   display: flex;
   align-items: center;
-  gap: 24px;
-  height: var(--nav-h);
+  gap: 8px;
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  height: 100%;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
 }
 
-.navbar__brand {
+.shell-mobilebar,
+.shell-tabbar {
+  display: none;
+}
+
+/* Sign in / Join: only the logo, no nav */
+.shell-minimal {
+  height: 64px;
+}
+
+/* --- Logo ---------------------------------------------------------------------- */
+.shell-logo {
   display: inline-flex;
-  align-items: center;
-  gap: 10px;
   flex-shrink: 0;
-  font-family: var(--font-head);
-  font-size: 1.25rem;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-input);
+  color: var(--text);
+  font-size: var(--fs-lg);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.brand-mark {
-  border-radius: 8px;
+.shell-logo__name {
+  color: var(--primary);
 }
 
-.navbar__menu {
+/* --- Search box: rounded, --surface-2, icon on the left ------------------------ */
+.shell-search {
+  position: relative;
   display: flex;
+  flex: 0 1 280px;
   align-items: center;
-  gap: 4px;
-  flex: 1;
   min-width: 0;
 }
 
-.navbar__link {
-  position: relative;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  font-size: 0.9375rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.navbar__link:hover {
-  color: var(--ink);
-  background: var(--overlay);
-}
-
-.navbar__link.is-active {
-  color: var(--ink);
-}
-
-.navbar__link.is-active::after {
-  content: '';
+.shell-search__icon {
   position: absolute;
   left: 12px;
-  right: 12px;
-  bottom: -13px;
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-  background: var(--marigold);
+  color: var(--text-2);
+  pointer-events: none;
 }
 
-.navbar__cta {
+.shell-search__input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  text-overflow: ellipsis;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.shell-search__input::placeholder {
+  color: var(--text-2);
+  opacity: 1;
+}
+
+.shell-search__input:hover {
+  border-color: var(--border-strong);
+}
+
+.shell-search__input:focus {
+  background: var(--surface);
+  border-color: var(--focus);
+}
+
+/* --- Desktop top nav -------------------------------------------------------------- */
+.shell-topnav__left {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.shell-topnav__right,
+.shell-topnav__items {
+  display: flex;
+  flex-shrink: 0;
+  align-items: stretch;
+  height: 100%;
+}
+
+.shell-topnav__divider {
+  align-self: center;
+  width: 1px;
+  height: 36px;
+  margin: 0 12px 0 4px;
+  background: var(--border);
+}
+
+.shell-topnav__post,
+.shell-topnav__auth {
+  align-self: center;
+}
+
+.shell-topnav__auth {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
 }
 
-.navbar__logout {
-  display: none; /* lives in the avatar menu on desktop */
+/* --- Nav item: icon over a small label (top nav = 80px wide, tab bar = equal columns) --- */
+.shell-navitem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color 150ms ease;
 }
 
-.navbar__actions {
+.shell-navitem:hover {
+  color: var(--text);
+}
+
+.shell-navitem:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--radius-input);
+}
+
+.shell-navitem__icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.shell-navitem__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Unread count on the icon's top-right corner, cut out from the bar by a surface ring */
+.shell-navitem__badge {
+  position: absolute;
+  top: -4px;
+  left: 14px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.shell-navitem--top {
+  width: 80px;
+  height: 100%;
+}
+
+/* Active page (and the open Me menu): dark text + a 2px bar sitting on the nav's bottom border */
+.shell-navitem--top.is-active,
+.shell-navitem--top[aria-expanded='true'] {
+  color: var(--text);
+}
+
+.shell-navitem--top.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--text);
+}
+
+/* The Me item is a Dropdown root: let it fill the bar's height like the links */
+.shell-me-menu {
+  align-items: stretch;
+  height: 100%;
+}
+
+.shell-navitem--me .ui-avatar {
+  --av: 24px;
+}
+
+/* Skeletons while /auth/me loads */
+.shell-navitem--skeleton {
+  gap: 4px;
+}
+
+.shell-navitem__skel-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.shell-navitem__skel-label {
+  width: 44px;
+  height: 10px;
+}
+
+.shell-navitem--tab .shell-navitem__skel-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* --- Me dropdown: mini profile header + links ---------------------------------------- */
+.shell-me-menu .ui-dropdown__menu {
+  width: 288px;
+}
+
+.shell-me {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shell-me__who {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
+  min-width: 0;
+}
+
+.shell-me__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shell-me__name {
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.shell-me__headline {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* --- Mobile Me sheet: the Modal pinned to the bottom edge ----------------------------- */
+.ui-modal:has(> .shell-sheet) {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.ui-modal__panel.shell-sheet {
+  max-width: none;
+  max-height: 85vh;
+  max-height: 85dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  animation: shell-sheet-in 200ms ease-out;
+}
+
+.shell-sheet .ui-modal__body {
+  padding: 16px;
+}
+
+@keyframes shell-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+.shell-sheet__list {
+  margin-top: 12px;
+}
+
+.shell-sheet__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  text-align: left;
+  transition: background-color 150ms ease;
+}
+
+.shell-sheet__item:hover {
+  background: var(--surface-2);
+}
+
+.shell-sheet__item svg {
+  color: var(--text-2);
+}
+
+.shell-sheet__item--danger,
+.shell-sheet__item--danger svg {
+  color: var(--danger);
+}
+
+.shell-sheet__divider {
+  height: 1px;
+  margin: 8px 0;
+  background: var(--border);
+}
+
+/* --- Mobile top bar --------------------------------------------------------------------- */
+.shell-mobilebar .shell-bar {
+  gap: 12px;
+}
+
+.shell-mobilebar__search {
+  flex: 1 1 auto;
+}
+
+/* 16px text so iOS doesn't zoom into the field */
+.shell-mobilebar .shell-search__input {
+  height: 36px;
+  font-size: var(--fs-md);
+}
+
+.shell-mobilebar__avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.shell-mobilebar__skel {
+  width: 32px;
+  height: 32px;
+}
+
+.shell-mobilebar__skel-wrap {
+  display: inline-flex;
   flex-shrink: 0;
 }
 
-.navbar__bell {
+/* Icon-only link (Messaging) with its badge */
+.shell-iconbtn {
   position: relative;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  color: var(--muted);
+  color: var(--text-2);
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.navbar__bell:hover,
-.navbar__bell.is-active {
-  color: var(--ink);
-  background: var(--overlay);
+.shell-iconbtn:hover,
+.shell-iconbtn.is-active {
+  background: var(--surface-2);
+  color: var(--text);
 }
 
-.navbar__badge {
+.shell-iconbtn__badge {
   position: absolute;
   top: 2px;
   right: 0;
   box-shadow: 0 0 0 2px var(--surface);
 }
 
-.navbar__toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+/* --- Bottom tab bar ------------------------------------------------------------------------ */
+.shell-navitem--tab {
+  gap: 2px;
+  height: var(--tabbar-h);
+  padding: 0 2px;
 }
 
-/* Avatar dropdown */
-.user-menu {
-  position: relative;
-}
-
-.user-menu__button {
-  display: inline-flex;
-  padding: 3px;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-}
-
-.user-menu__button:hover,
-.user-menu__button[aria-expanded='true'] {
-  box-shadow: 0 0 0 2px var(--marigold);
-}
-
-.menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  width: 220px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow-lg);
-}
-
-.menu__head {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 10px 10px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--line);
-  min-width: 0;
-}
-
-.menu__role {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.menu__item {
-  display: block;
-  width: 100%;
-  padding: 9px 10px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  text-align: left;
-  font-size: 0.9375rem;
+.shell-navitem--tab.is-active {
+  color: var(--primary);
   font-weight: 600;
 }
 
-.menu__item:hover {
-  background: var(--overlay);
-}
+/* --- Breakpoint: under 992px the mobile bars replace the top nav ----------------------------- */
+@media (max-width: 991.98px) {
+  :root {
+    --toast-bottom: calc(var(--tabbar-space) + 12px); /* toasts sit above the tab bar */
+  }
 
-.menu__item--danger {
-  color: var(--rust);
+  .shell-topnav {
+    display: none;
+  }
+
+  .shell-mobilebar {
+    display: block;
+  }
+
+  .shell-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    height: var(--tabbar-space);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .main--tabbar {
+    padding-bottom: calc(var(--tabbar-space) + 24px);
+  }
+
+  /* TEMPORARY (until the Messaging redesign, Phase 6): keep the old chat card above the tab bar */
+  .main--tabbar .chat-page {
+    margin-bottom: -12px;
+  }
+
+  .main--tabbar .chat {
+    height: calc(100vh - var(--nav-h) - var(--tabbar-space) - 32px);
+    height: calc(100dvh - var(--nav-h) - var(--tabbar-space) - 32px);
+  }
 }
 
 @media (max-width: 759.98px) {
-  .navbar__inner {
-    gap: 12px;
+  .main--tabbar .chat {
+    height: calc(100vh - var(--nav-h) - var(--tabbar-space) - 24px);
+    height: calc(100dvh - var(--nav-h) - var(--tabbar-space) - 24px);
   }
+}
 
-  .navbar__toggle {
-    display: inline-flex;
-  }
+/* --- Page grid (Layout.jsx) ------------------------------------------------------------------ */
+.shell-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--layout-gap);
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding: 24px var(--gutter) 0;
+}
 
-  .navbar__actions {
-    margin-left: auto;
-  }
+.shell-layout--three { grid-template-columns: var(--rail-left) minmax(0, 1fr) var(--rail-right); }
+.shell-layout--two-right { grid-template-columns: minmax(0, 1fr) var(--rail-right); }
+.shell-layout--two-left { grid-template-columns: var(--rail-left) minmax(0, 1fr); }
 
-  .navbar__menu {
-    display: none;
-    position: absolute;
-    top: var(--nav-h);
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    padding: 10px var(--gutter) 16px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
-    box-shadow: var(--shadow-lg);
-    max-height: calc(100vh - var(--nav-h));
-    overflow-y: auto;
-  }
+/* Each column stacks its cards 8px apart */
+.shell-layout__left,
+.shell-layout__main,
+.shell-layout__right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 
-  .navbar__menu.is-open {
-    display: flex;
-  }
+/* Under 1200px the right rail goes first */
+@media (max-width: 1199.98px) {
+  .shell-layout--three { grid-template-columns: var(--rail-left) minmax(0, 1fr); }
+  .shell-layout--three > .shell-layout__right { display: none; }
+}
 
-  .navbar__link {
-    padding: 12px;
-    font-size: 1rem;
+/* Under 992px: one column (left rail, main, right rail in source order) */
+@media (max-width: 991.98px) {
+  .shell-layout,
+  .shell-layout--three,
+  .shell-layout--two-right,
+  .shell-layout--two-left {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding-top: 16px;
   }
+}
 
-  .navbar__link.is-active {
-    background: var(--marigold-soft);
-  }
-
-  .navbar__link.is-active::after {
-    display: none;
-  }
-
-  .navbar__cta {
-    flex-direction: column;
-    align-items: stretch;
-    margin: 8px 0 0;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
-  }
-
-  .navbar__cta .btn {
-    min-height: 44px;
-  }
-
-  .navbar__logout {
-    display: inline-flex;
-    color: var(--rust);
-  }
+@media (prefers-reduced-motion: reduce) {
+  .ui-modal__panel.shell-sheet { animation: none; }
 }
 
 /* ---------------------------------------------------------------------------

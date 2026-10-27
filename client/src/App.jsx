@@ -4,7 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { Bell } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
-import Navbar from './components/Navbar';
+import { UnreadMessagesProvider } from './context/UnreadMessagesContext';
+import AppShell from './components/shell/AppShell';
 import Loader from './components/Loader';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -40,59 +41,62 @@ export default function App() {
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <SocketProvider>
-          <ScrollToTop />
-          <a className="skip-link" href="#main">Skip to content</a>
-          <Navbar />
-          <main id="main" className="main">
-            <Suspense fallback={<Loader full />}>
-              <Routes>
-                {/* Public */}
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/gigs" element={<Gigs />} />
-                <Route path="/freelancers" element={<Freelancers />} />
-                <Route path="/users/:id" element={<Profile />} />
-                {/* TEMPORARY: removed in redesign Phase 8 */}
-                <Route path="/ui-preview" element={<UiPreview />} />
+          <UnreadMessagesProvider>
+            <ScrollToTop />
+            {/* Redesign Phase 2: top nav / mobile bars around every page */}
+            <AppShell>
+              <Suspense fallback={<Loader full />}>
+                <Routes>
+                  {/* Public */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/gigs" element={<Gigs />} />
+                  <Route path="/freelancers" element={<Freelancers />} />
+                  <Route path="/users/:id" element={<Profile />} />
+                  {/* TEMPORARY: removed in redesign Phase 8 */}
+                  <Route path="/ui-preview" element={<UiPreview />} />
 
-                {/* Session 7: client-only routes (same GigForm for create and edit) */}
-                <Route
-                  path="/gigs/new"
-                  element={<ProtectedRoute roles={['client']}><GigForm /></ProtectedRoute>}
-                />
-                <Route
-                  path="/gigs/:id/edit"
-                  element={<ProtectedRoute roles={['client']}><GigForm /></ProtectedRoute>}
-                />
-                <Route path="/gigs/:id" element={<GigDetails />} />
+                  {/* Session 7: client-only routes (same GigForm for create and edit) */}
+                  <Route
+                    path="/gigs/new"
+                    element={<ProtectedRoute roles={['client']}><GigForm /></ProtectedRoute>}
+                  />
+                  <Route
+                    path="/gigs/:id/edit"
+                    element={<ProtectedRoute roles={['client']}><GigForm /></ProtectedRoute>}
+                  />
+                  <Route path="/gigs/:id" element={<GigDetails />} />
 
-                {/* Any logged-in user */}
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-                <Route path="/chat/:conversationId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  {/* Any logged-in user */}
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                  <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                  <Route path="/chat/:conversationId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                  <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
-                {/* Admin only */}
-                <Route path="/admin" element={<ProtectedRoute roles={['admin']}><Admin /></ProtectedRoute>} />
+                  {/* Admin only */}
+                  <Route path="/admin" element={<ProtectedRoute roles={['admin']}><Admin /></ProtectedRoute>} />
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </main>
-          <Toaster
-            position="bottom-left"
-            toastOptions={{
-              className: 'toast',
-              duration: 4000,
-              // Colours are CSS variables, so toasts follow light / dark mode like everything else
-              success: { iconTheme: { primary: 'var(--success)', secondary: 'var(--surface)' } },
-              error: { iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' } },
-              loading: { iconTheme: { primary: 'var(--primary)', secondary: 'var(--border)' } },
-              blank: { icon: <Bell className="toast__icon" size={16} aria-hidden="true" /> },
-            }}
-          />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AppShell>
+            <Toaster
+              position="bottom-left"
+              // Under 992px --toast-bottom lifts toasts above the bottom tab bar (set in the "App shell" CSS)
+              containerStyle={{ bottom: 'var(--toast-bottom, 16px)' }}
+              toastOptions={{
+                className: 'toast',
+                duration: 4000,
+                // Colours are CSS variables, so toasts follow light / dark mode like everything else
+                success: { iconTheme: { primary: 'var(--success)', secondary: 'var(--surface)' } },
+                error: { iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' } },
+                loading: { iconTheme: { primary: 'var(--primary)', secondary: 'var(--border)' } },
+                blank: { icon: <Bell className="toast__icon" size={16} aria-hidden="true" /> },
+              }}
+            />
+          </UnreadMessagesProvider>
         </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
