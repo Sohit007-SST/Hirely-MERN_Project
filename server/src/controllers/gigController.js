@@ -12,12 +12,13 @@ const USER_CARD = 'name avatar headline role rating';
 const COMMENT_USER = 'name avatar role';
 const EDITABLE_FIELDS = ['title', 'description', 'category', 'budget', 'skills'];
 
+// _id is the final tiebreaker so pagination is stable when createdAt values are equal
 const SORTS = {
-  newest: { createdAt: -1 },
-  oldest: { createdAt: 1 },
-  'budget-high': { budget: -1, createdAt: -1 },
-  'budget-low': { budget: 1, createdAt: -1 },
-  popular: { bidsCount: -1, createdAt: -1 },
+  newest: { createdAt: -1, _id: -1 },
+  oldest: { createdAt: 1, _id: 1 },
+  'budget-high': { budget: -1, createdAt: -1, _id: -1 },
+  'budget-low': { budget: 1, createdAt: -1, _id: -1 },
+  popular: { bidsCount: -1, createdAt: -1, _id: -1 },
 };
 
 const isSameId = (a, b) => String(a) === String(b);
