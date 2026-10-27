@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Lock, SearchX, Sparkles, Undo2, X } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import EmptyState from '../components/EmptyState';
-import Loader from '../components/Loader';
+import Layout from '../components/shell/Layout';
+import { Button, EmptyState, Skeleton } from '../components/ui';
 import { CATEGORIES, sameId } from '../utils/format';
+import GeminiNotice from '../components/gigs/GeminiNotice';
+import { toFieldErrors } from '../components/gigs/gigHelpers';
 
 const EMPTY = { title: '', category: '', budget: '', deadline: '', skills: '', description: '' };
 
@@ -35,14 +38,30 @@ const tomorrow = () => {
   return toDateInput(d);
 };
 
-function SparkIcon() {
+// Centred 744px column used by every state of this page
+function FormShell({ children }) {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path
-        d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"
-        fill="currentColor"
-      />
-    </svg>
+    <Layout variant="full" className="gigs-formpage">
+      <div className="gigs-formpage__col">{children}</div>
+    </Layout>
+  );
+}
+
+function FormSkeleton() {
+  return (
+    <FormShell>
+      <div className="ui-card gigs-formcard gigs-pad gigs-skel-stack" role="status" aria-busy="true">
+        <span className="ui-sr-only">Loading gig…</span>
+        <Skeleton width={160} height={24} />
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="gigs-skel-stack">
+            <Skeleton width={96} height={12} />
+            <Skeleton shape="rect" width="100%" height={44} />
+          </div>
+        ))}
+        <Skeleton shape="rect" width="100%" height={160} />
+      </div>
+    </FormShell>
   );
 }
 
@@ -95,6 +114,10 @@ export default function GigForm() {
       });
     return () => controller.abort();
   }, [id, isEdit]);
+
+  const cancelTo = isEdit ? `/gigs/${id}` : '/dashboard';
+  // X: back to wherever the client came from (or the Cancel target on a fresh tab)
+  const close = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(cancelTo));
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -175,52 +198,52 @@ export default function GigForm() {
       toast.success(isEdit ? 'Changes saved' : 'Gig posted. Freelancers can bid now');
       navigate(`/gigs/${data.gig._id}`);
     } catch (err) {
-      const byField = {};
-      (err.errors || []).forEach((fe) => {
-        if (!byField[fe.field]) byField[fe.field] = fe.message;
-      });
-      setFieldErrors(byField);
+      setFieldErrors(toFieldErrors(err.errors));
       setError(err.message);
+      toast.error(err.message);
       setSubmitting(false);
     }
   };
 
-  if (status === 'loading') return <Loader full label="Loading gig" />;
+  if (status === 'loading') return <FormSkeleton />;
 
+  // Not found / load error / not the owner / not open: one message card each
+  let blocked = null;
   if (status === 'notfound' || status === 'error') {
-    return (
-      <div className="container page">
-        <EmptyState
-          title={status === 'notfound' ? "This gig doesn't exist or was removed" : "Couldn't load this gig"}
-          text={status === 'notfound' ? 'There is nothing to edit here. Post a new gig instead.' : `${loadError}. Refresh the page to try again.`}
-          action={<Link className="btn btn--primary" to="/gigs/new">Post a new gig</Link>}
-        />
-      </div>
+    const missing = status === 'notfound';
+    blocked = (
+      <EmptyState
+        icon={SearchX}
+        title={missing ? "This gig doesn't exist or was removed" : "Couldn't load this gig"}
+        text={missing ? 'There is nothing to edit here. Post a new gig instead.' : `${loadError}. Refresh the page to try again.`}
+        action={<Button to="/gigs/new">Post a new gig</Button>}
+      />
+    );
+  } else if (isEdit && original && !sameId(original.client, user)) {
+    // Edit is only for the owner, and only while the gig is open
+    blocked = (
+      <EmptyState
+        icon={Lock}
+        title="You can only edit your own gigs"
+        text="This gig was posted by another client."
+        action={<Button to={`/gigs/${id}`}>View the gig</Button>}
+      />
+    );
+  } else if (isEdit && original && original.status !== 'open') {
+    blocked = (
+      <EmptyState
+        icon={Lock}
+        title="This gig can't be edited any more"
+        text="Only open gigs can be edited. Once a freelancer is hired, the details are locked."
+        action={<Button to={`/gigs/${id}`}>Back to the gig</Button>}
+      />
     );
   }
-
-  // Edit is only for the owner, and only while the gig is open
-  if (isEdit && original && !sameId(original.client, user)) {
+  if (blocked) {
     return (
-      <div className="container page">
-        <EmptyState
-          title="You can only edit your own gigs"
-          text="This gig was posted by another client."
-          action={<Link className="btn btn--primary" to={`/gigs/${id}`}>View the gig</Link>}
-        />
-      </div>
-    );
-  }
-
-  if (isEdit && original && original.status !== 'open') {
-    return (
-      <div className="container page">
-        <EmptyState
-          title="This gig can't be edited any more"
-          text="Only open gigs can be edited. Once a freelancer is hired, the details are locked."
-          action={<Link className="btn btn--primary" to={`/gigs/${id}`}>Back to the gig</Link>}
-        />
-      </div>
+      <FormShell>
+        <div className="ui-card">{blocked}</div>
+      </FormShell>
     );
   }
 
@@ -234,36 +257,43 @@ export default function GigForm() {
     'aria-describedby': fieldErrors[name] ? `gig-${name}-error` : hasHint ? `gig-${name}-hint` : undefined,
   });
   const fieldError = (name) =>
-    fieldErrors[name] && <p className="field-error" id={`gig-${name}-error`}>{fieldErrors[name]}</p>;
+    fieldErrors[name] && <p className="gigs-error" id={`gig-${name}-error`}>{fieldErrors[name]}</p>;
 
   return (
-    <div className="container page">
-      <header className="page-head">
-        <div>
-          <h1 className="page-title">{isEdit ? 'Edit gig' : 'Post a gig'}</h1>
-          <p className="page-sub">
-            {isEdit
-              ? 'Update the details while the gig is open. Freelancers see the changes straight away.'
-              : 'Describe the work, set a budget in rupees, and freelancers will start sending bids.'}
-          </p>
-        </div>
-      </header>
-
-      <div className="layout-2col">
-        <form className="card card--pad-lg form gig-form" onSubmit={onSubmit} noValidate>
-          {error && <div className="alert alert--error" role="alert">{error}</div>}
-
-          <div className="field">
-            <div className="field__top">
-              <label className="label" htmlFor="gig-title">Title</label>
-              <span className="counter">{form.title.length} / 100</span>
-            </div>
-            <input className="input" maxLength={100} placeholder="e.g. Build a landing page for my bakery" autoFocus={!isEdit} {...fieldProps('title')} />
-            {fieldError('title') || <p className="hint" id="gig-title-hint">Say what you need in one line.</p>}
+    <FormShell>
+      <form className="ui-card gigs-formcard" onSubmit={onSubmit} noValidate aria-labelledby="gig-form-title">
+        <header className="gigs-formcard__head">
+          <div>
+            <h1 id="gig-form-title" className="gigs-formcard__title">{isEdit ? 'Edit gig' : 'Post a gig'}</h1>
+            <p className="gigs-formcard__sub">
+              {isEdit
+                ? 'Update the details while the gig is open. Freelancers see the changes straight away.'
+                : 'A specific title, a realistic budget and clear deliverables get the best bids.'}
+            </p>
           </div>
+          <Button variant="tertiary" icon={X} aria-label="Close" onClick={close} />
+        </header>
 
-          <div className="form-row">
-            <div className="field">
+        <div className="gigs-formcard__body">
+          {error && <div className="gigs-alert gigs-alert--error" role="alert">{error}</div>}
+
+          <section className="gigs-formsec" aria-labelledby="sec-basics">
+            <h2 id="sec-basics" className="gigs-formsec__label">Basics</h2>
+            <div className="gigs-field">
+              <div className="gigs-field__top">
+                <label className="label" htmlFor="gig-title">Title</label>
+                <span className="counter">{form.title.length} / 100</span>
+              </div>
+              <input
+                className="input"
+                maxLength={100}
+                placeholder="e.g. Build a landing page for my bakery"
+                autoFocus={!isEdit}
+                {...fieldProps('title')}
+              />
+              {fieldError('title') || <p className="gigs-hint" id="gig-title-hint">Say what you need in one line.</p>}
+            </div>
+            <div className="gigs-field">
               <label className="label" htmlFor="gig-category">Category</label>
               <select className="select" {...fieldProps('category', false)}>
                 <option value="">Choose a category</option>
@@ -273,105 +303,90 @@ export default function GigForm() {
               </select>
               {fieldError('category')}
             </div>
+          </section>
 
-            <div className="field">
-              <label className="label" htmlFor="gig-budget">Budget (₹)</label>
-              <input className="input" inputMode="numeric" placeholder="e.g. 15000" {...fieldProps('budget')} />
-              {fieldError('budget') || <p className="hint" id="gig-budget-hint">The total you'll pay, at least ₹100.</p>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="field">
-              <label className="label" htmlFor="gig-deadline">Deadline <span className="muted">(optional)</span></label>
-              <input className="input" type="date" min={tomorrow()} {...fieldProps('deadline')} />
-              {fieldError('deadline') || <p className="hint" id="gig-deadline-hint">Leave it empty if the date is flexible.</p>}
-            </div>
-
-            <div className="field">
-              <label className="label" htmlFor="gig-skills">Skills <span className="muted">(optional)</span></label>
-              <input className="input" placeholder="e.g. React, Figma, SEO" {...fieldProps('skills')} />
-              {fieldError('skills') || <p className="hint" id="gig-skills-hint">Separate skills with commas. Up to 15.</p>}
-            </div>
-          </div>
-
-          {skills.length > 0 && (
-            <ul className="chips gig-form__skills" aria-label="Skills preview">
-              {skills.map((s) => (
-                <li key={s} className="chip">{s}</li>
-              ))}
-            </ul>
-          )}
-
-          <div className="field">
-            <div className="ai-bar">
-              <div>
-                <label className="label" htmlFor="gig-description">Description</label>
-                <p className="hint">Rough notes are fine. Gemini can turn them into a clear brief.</p>
+          <section className="gigs-formsec" aria-labelledby="sec-budget">
+            <h2 id="sec-budget" className="gigs-formsec__label">Budget and timing</h2>
+            <div className="gigs-form-row">
+              <div className="gigs-field">
+                <label className="label" htmlFor="gig-budget">Budget (₹)</label>
+                <input className="input" inputMode="numeric" placeholder="e.g. 15000" {...fieldProps('budget')} />
+                {fieldError('budget') || <p className="gigs-hint" id="gig-budget-hint">The total you'll pay, at least ₹100.</p>}
               </div>
-              <button
-                type="button"
-                className="btn btn--ink btn--sm"
-                disabled={!canImprove || aiBusy}
-                onClick={improveWithGemini}
-                aria-describedby="gig-ai-hint"
-              >
-                <SparkIcon />
-                {aiBusy ? 'Improving…' : 'Improve with Gemini'}
-              </button>
+              <div className="gigs-field">
+                <label className="label" htmlFor="gig-deadline">Deadline <span className="gigs-muted">(optional)</span></label>
+                <input className="input" type="date" min={tomorrow()} {...fieldProps('deadline')} />
+                {fieldError('deadline') || <p className="gigs-hint" id="gig-deadline-hint">Leave it empty if the date is flexible.</p>}
+              </div>
             </div>
-            {!canImprove && (
-              <p className="hint" id="gig-ai-hint">Add a title and at least 10 characters of notes to use Gemini.</p>
+          </section>
+
+          <section className="gigs-formsec" aria-labelledby="sec-skills">
+            <h2 id="sec-skills" className="gigs-formsec__label">Skills</h2>
+            <div className="gigs-field">
+              <label className="label" htmlFor="gig-skills">Skills needed <span className="gigs-muted">(optional)</span></label>
+              <input className="input" placeholder="e.g. React, Figma, SEO" {...fieldProps('skills')} />
+              {fieldError('skills') || <p className="gigs-hint" id="gig-skills-hint">Separate skills with commas. Up to 15.</p>}
+            </div>
+            {skills.length > 0 && (
+              <ul className="gigs-chips" aria-label="Skills preview">
+                {skills.map((s) => (
+                  <li key={s} className="gigs-chip">{s}</li>
+                ))}
+              </ul>
             )}
-            {aiError &&
-              (aiError.status === 503 ? (
-                <div className="alert alert--info" role="status">
-                  <strong>Gemini isn't set up on this server yet.</strong> You can still write the description yourself.
-                  <span className="ai-box__detail">{aiError.message}</span>
-                </div>
-              ) : (
-                <p className="field-error" role="alert">{aiError.message}</p>
-              ))}
-            {notesBackup !== null && (
-              <div className="alert alert--success ai-done" role="status">
-                <span>Gemini rewrote your notes. Read it through and edit anything that isn't right.</span>
-                <button type="button" className="btn btn--ghost btn--sm" onClick={undoGemini}>
-                  Undo
+          </section>
+
+          <section className="gigs-formsec" aria-labelledby="sec-description">
+            <h2 id="sec-description" className="gigs-formsec__label">Description</h2>
+            <div className="gigs-field">
+              <div className="gigs-ai-bar">
+                <label className="label" htmlFor="gig-description">What needs doing</label>
+                <button
+                  type="button"
+                  className="gigs-ai-pill"
+                  disabled={!canImprove || aiBusy}
+                  onClick={improveWithGemini}
+                  aria-describedby="gig-ai-hint"
+                  aria-busy={aiBusy || undefined}
+                >
+                  <Sparkles size={16} aria-hidden="true" focusable="false" />
+                  {aiBusy ? 'Improving…' : 'Improve with Gemini'}
                 </button>
               </div>
-            )}
-            <textarea
-              className="textarea textarea--tall"
-              maxLength={3000}
-              placeholder="What needs doing, what you already have, and what you expect to receive."
-              {...fieldProps('description')}
-            />
-            <div className="field__top">
-              {fieldError('description') || <p className="hint" id="gig-description-hint">At least 20 characters.</p>}
-              <span className="counter">{form.description.length} / 3000</span>
+              <p className="gigs-hint" id="gig-ai-hint">
+                {canImprove
+                  ? 'Rough notes are fine. Gemini can turn them into a clear brief.'
+                  : 'Add a title and at least 10 characters of notes to use Gemini.'}
+              </p>
+              <GeminiNotice error={aiError} what="the description" />
+              {notesBackup !== null && (
+                <div className="gigs-alert gigs-alert--success" role="status">
+                  <span>Gemini rewrote your notes. Read it through and edit anything that isn't right.</span>
+                  <Button variant="tertiary" size="sm" icon={Undo2} onClick={undoGemini}>Undo</Button>
+                </div>
+              )}
+              <textarea
+                className="textarea gigs-textarea--tall"
+                maxLength={3000}
+                placeholder="What needs doing, what you already have, and what you expect to receive."
+                {...fieldProps('description')}
+              />
+              <div className="gigs-field__top">
+                {fieldError('description') || <p className="gigs-hint" id="gig-description-hint">At least 20 characters.</p>}
+                <span className="counter">{form.description.length} / 3000</span>
+              </div>
             </div>
-          </div>
-
-          <div className="gig-form__actions">
-            <Link className="btn btn--ghost" to={isEdit ? `/gigs/${id}` : '/dashboard'}>Cancel</Link>
-            <button type="submit" className="btn btn--primary btn--lg" disabled={submitting}>
-              {submitting ? (isEdit ? 'Saving…' : 'Posting…') : isEdit ? 'Save changes' : 'Post gig'}
-            </button>
-          </div>
-        </form>
-
-        <aside className="layout-2col__side" aria-label="Tips">
-          <section className="card side-card gig-tips">
-            <h2 className="card__title">What gets good bids</h2>
-            <ol className="gig-tips__list">
-              <li><strong>A specific title.</strong> “Logo for a skincare brand” beats “Need a designer”.</li>
-              <li><strong>A realistic budget.</strong> Freelancers bid around it, so set what the work is worth.</li>
-              <li><strong>Clear deliverables.</strong> List the files or pages you expect at the end.</li>
-            </ol>
-            <p className="small muted">You can edit the gig until you hire someone.</p>
           </section>
-        </aside>
-      </div>
-    </div>
+        </div>
+
+        <footer className="gigs-formcard__foot">
+          <Button variant="tertiary" to={cancelTo}>Cancel</Button>
+          <Button type="submit" loading={submitting} loadingText={isEdit ? 'Saving…' : 'Posting…'}>
+            {isEdit ? 'Save changes' : 'Post gig'}
+          </Button>
+        </footer>
+      </form>
+    </FormShell>
   );
 }

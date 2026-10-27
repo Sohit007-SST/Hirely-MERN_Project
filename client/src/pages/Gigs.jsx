@@ -1,38 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Briefcase, Plus, RotateCcw, SearchX, WifiOff } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import GigCard from '../components/GigCard';
-import Pagination from '../components/Pagination';
-import EmptyState from '../components/EmptyState';
-import Loader from '../components/Loader';
+import Layout from '../components/shell/Layout';
+import { Button, EmptyState, Pagination, SkeletonRow } from '../components/ui';
 import useDebounce from '../utils/useDebounce';
-import { CATEGORIES, plural } from '../utils/format';
-
-const SORTS = [
-  ['newest', 'Newest first'],
-  ['oldest', 'Oldest first'],
-  ['budget-high', 'Highest budget'],
-  ['budget-low', 'Lowest budget'],
-  ['popular', 'Most bids'],
-];
+import { plural } from '../utils/format';
+import GigFilterBar from '../components/gigs/GigFilterBar';
+import GigListRow from '../components/gigs/GigListRow';
+import GigDetailPane from '../components/gigs/GigDetailPane';
+import useMediaQuery, { DESKTOP } from '../components/gigs/useMediaQuery';
 
 const PAGE_SIZE = 12;
 
-// Budgets are whole rupees: keep digits only
-const digits = (value) => value.replace(/\D/g, '').slice(0, 9);
-
-function SearchIcon() {
-  return (
-    <svg className="search-field__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M16 16l4.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export default function Gigs() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const isDesktop = useMediaQuery(DESKTOP);
   // Session 9: every filter lives in the URL, so a search can be shared, bookmarked or undone with Back
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -42,8 +27,9 @@ export default function Gigs() {
   const category = searchParams.get('category') || '';
   const sort = searchParams.get('sort') || 'newest';
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const selectedId = searchParams.get('selected') || '';
 
-  // Typed filters are debounced; the selects apply straight away
+  // Typed filters are debounced; the dropdown choices apply straight away
   const [draft, setDraft] = useState({ q: urlQ, minBudget: urlMin, maxBudget: urlMax });
   const debounced = useDebounce(draft, 400); // Session 14: debounced search
 
@@ -51,8 +37,17 @@ export default function Gigs() {
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const listRef = useRef(null);
 
-  // Write changes to the URL. Changing any filter goes back to page 1.
+  // Phones have no detail pane: a shared "?selected=" link opens the gig page instead
+  const redirected = useRef(false);
+  useEffect(() => {
+    if (redirected.current) return;
+    redirected.current = true;
+    if (!isDesktop && selectedId) navigate(`/gigs/${selectedId}`, { replace: true });
+  }, [isDesktop, selectedId, navigate]);
+
+  // Write changes to the URL. Changing a filter goes back to page 1 and clears the selected gig.
   const updateParams = useCallback(
     (changes, options) => {
       setSearchParams((prev) => {
@@ -61,7 +56,8 @@ export default function Gigs() {
           if (value) next.set(key, value);
           else next.delete(key);
         });
-        if (!('page' in changes)) next.delete('page');
+        if (!('page' in changes) && !('selected' in changes)) next.delete('page');
+        if (!('selected' in changes)) next.delete('selected');
         return next;
       }, options);
     },
@@ -78,7 +74,7 @@ export default function Gigs() {
     if (Object.keys(changes).length) updateParams(changes, { replace: true });
   }, [debounced]); // only when the debounced text settles
 
-  // URL -> inputs, when the URL changes from outside (Back button, "Clear filters")
+  // URL -> inputs, when the URL changes from outside (Back button, nav search, Reset)
   useEffect(() => {
     const ownWrite =
       urlQ === debounced.q.trim() && urlMin === debounced.minBudget && urlMax === debounced.maxBudget;
@@ -109,198 +105,154 @@ export default function Gigs() {
     return () => controller.abort();
   }, [urlQ, urlMin, urlMax, category, sort, page, reloadKey]);
 
-  const onDraft = (e) => {
-    const { name, value } = e.target;
-    setDraft((d) => ({ ...d, [name]: name === 'q' ? value : digits(value) }));
-  };
+  const onDraft = (name, value) => setDraft((d) => ({ ...d, [name]: value }));
 
   const clearFilters = () => {
     setDraft({ q: '', minBudget: '', maxBudget: '' });
     setSearchParams({});
   };
 
-  const goToPage = (p) => {
-    updateParams({ page: p > 1 ? String(p) : '' });
-    window.scrollTo(0, 0);
+  // "All filters" modal: apply everything at once (no debounce)
+  const applyAll = (values) => {
+    setDraft({ q: values.q, minBudget: values.minBudget, maxBudget: values.maxBudget });
+    updateParams({
+      q: values.q.trim(),
+      category: values.category,
+      minBudget: values.minBudget,
+      maxBudget: values.maxBudget,
+      sort: values.sort === 'newest' ? '' : values.sort,
+    });
   };
 
-  const hasFilters = Boolean(urlQ || category || urlMin || urlMax);
+  const goToPage = (p) => {
+    updateParams({ page: p > 1 ? String(p) : '' });
+    if (isDesktop) listRef.current?.scrollIntoView({ block: 'start' });
+    else window.scrollTo(0, 0);
+  };
+
+  // Desktop: show the gig in the pane (replace, so clicking through results doesn't fill the history)
+  const selectGig = useCallback((gig) => updateParams({ selected: gig._id }, { replace: true }), [updateParams]);
+
+  // A gig deleted from the pane: drop it from the list and refresh the count
+  const onPaneDeleted = (gigId) => {
+    setResult((r) => ({ ...r, gigs: r.gigs.filter((g) => g._id !== gigId) }));
+    updateParams({ selected: '' }, { replace: true });
+    setReloadKey((k) => k + 1);
+  };
+
+  const narrowed = Boolean(urlQ || category || urlMin || urlMax); // filters that can hide gigs
+  const hasFilters = narrowed || sort !== 'newest'; // anything Reset would clear
   const rangeError =
     draft.minBudget && draft.maxBudget && Number(draft.minBudget) > Number(draft.maxBudget)
       ? 'The minimum is higher than the maximum, so nothing can match.'
       : '';
   const firstLoad = status === 'loading' && result.gigs.length === 0;
+  const hasResults = !firstLoad && status !== 'error' && result.gigs.length > 0;
+  const paneId = selectedId || result.gigs[0]?._id;
 
   let summary = '';
   if (status !== 'error' && !firstLoad) {
-    summary = plural(result.total, 'open gig');
+    summary = plural(result.total, 'result');
     if (urlQ) summary += ` for “${urlQ}”`;
     if (category) summary += ` in ${category}`;
   }
 
-  return (
-    <div className="container page">
-      <header className="page-head">
-        <div>
-          <h1 className="page-title">Find gigs</h1>
-          <p className="page-sub">Open work from clients across India. Search, set a budget range and bid on what fits you.</p>
-        </div>
-        {user?.role === 'client' && (
-          <div className="page-actions">
-            <Link className="btn btn--primary" to="/gigs/new">Post a gig</Link>
-          </div>
-        )}
-      </header>
-
-      <form className="card gig-filters" role="search" aria-label="Filter gigs" onSubmit={(e) => e.preventDefault()}>
-        <div className="field gig-filters__search">
-          <label className="label" htmlFor="gig-search">Search</label>
-          <div className="search-field">
-            <SearchIcon />
-            <input
-              id="gig-search"
-              className="input search-field__input"
-              type="search"
-              name="q"
-              placeholder="Try “React”, “logo” or “blog posts”"
-              value={draft.q}
-              onChange={onDraft}
-              maxLength={100}
-              autoComplete="off"
+  let listBody;
+  if (status === 'error') {
+    listBody = (
+      <EmptyState
+        compact
+        icon={WifiOff}
+        title="Couldn't load gigs"
+        text={`${error}. Check your connection and try again.`}
+        action={<Button onClick={() => setReloadKey((k) => k + 1)}>Try again</Button>}
+      />
+    );
+  } else if (firstLoad) {
+    listBody = <SkeletonRow count={6} label="Loading gigs" />;
+  } else if (result.gigs.length === 0) {
+    listBody = narrowed ? (
+      <EmptyState
+        compact
+        icon={SearchX}
+        title="No gigs match these filters"
+        text="Try a shorter search, widen the budget range or pick another category."
+        action={<Button variant="secondary" icon={RotateCcw} onClick={clearFilters}>Reset filters</Button>}
+      />
+    ) : (
+      <EmptyState
+        compact
+        icon={Briefcase}
+        title="No open gigs right now"
+        text={
+          user?.role === 'client'
+            ? 'Post the first one and freelancers can start bidding straight away.'
+            : 'New gigs appear here as soon as clients post them. Check back soon.'
+        }
+        action={
+          user?.role === 'client' ? (
+            <Button to="/gigs/new" icon={Plus}>Post a gig</Button>
+          ) : !user && !authLoading ? (
+            <Button to="/register?role=client">Post a gig as a client</Button>
+          ) : null
+        }
+      />
+    );
+  } else {
+    listBody = (
+      <>
+        <ul className={`gigs-list${status === 'loading' ? ' is-stale' : ''}`} aria-busy={status === 'loading'} aria-label="Gigs">
+          {result.gigs.map((gig) => (
+            <GigListRow
+              key={gig._id}
+              gig={gig}
+              selected={isDesktop && gig._id === paneId}
+              onSelect={isDesktop ? selectGig : undefined}
             />
-          </div>
-        </div>
-
-        <div className="field">
-          <label className="label" htmlFor="gig-category">Category</label>
-          <select
-            id="gig-category"
-            className="select"
-            value={category}
-            onChange={(e) => updateParams({ category: e.target.value })}
-          >
-            <option value="">All categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-
-        <fieldset className="field">
-          <legend className="label">Budget (₹)</legend>
-          <div className="budget-range">
-            <label className="sr-only" htmlFor="gig-min">Minimum budget in rupees</label>
-            <input
-              id="gig-min"
-              className="input"
-              name="minBudget"
-              inputMode="numeric"
-              placeholder="Min"
-              value={draft.minBudget}
-              onChange={onDraft}
-              aria-invalid={Boolean(rangeError)}
-              aria-describedby={rangeError ? 'gig-range-error' : undefined}
-            />
-            <span className="budget-range__dash" aria-hidden="true">–</span>
-            <label className="sr-only" htmlFor="gig-max">Maximum budget in rupees</label>
-            <input
-              id="gig-max"
-              className="input"
-              name="maxBudget"
-              inputMode="numeric"
-              placeholder="Max"
-              value={draft.maxBudget}
-              onChange={onDraft}
-              aria-invalid={Boolean(rangeError)}
-              aria-describedby={rangeError ? 'gig-range-error' : undefined}
-            />
-          </div>
-        </fieldset>
-
-        <div className="field">
-          <label className="label" htmlFor="gig-sort">Sort by</label>
-          <select
-            id="gig-sort"
-            className="select"
-            value={sort}
-            onChange={(e) => updateParams({ sort: e.target.value === 'newest' ? '' : e.target.value })}
-          >
-            {SORTS.map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </div>
-
-        {rangeError && (
-          <p className="field-error gig-filters__error" id="gig-range-error">{rangeError}</p>
-        )}
-      </form>
-
-      <div className="gig-results__bar">
-        <p className="gig-results__count" aria-live="polite">{summary}</p>
-        {hasFilters && (
-          <button type="button" className="btn btn--ghost btn--sm" onClick={clearFilters}>
-            Clear filters
-          </button>
-        )}
-      </div>
-
-      {status === 'error' ? (
-        <EmptyState
-          title="Couldn't load gigs"
-          text={`${error}. Check your connection and try again.`}
-          action={
-            <button type="button" className="btn btn--primary" onClick={() => setReloadKey((k) => k + 1)}>
-              Try again
-            </button>
-          }
-        />
-      ) : firstLoad ? (
-        <Loader label="Loading gigs" />
-      ) : status === 'ready' && result.gigs.length === 0 ? (
-        hasFilters ? (
-          <EmptyState
-            title="No gigs match these filters"
-            text="Try a shorter search, widen the budget range or pick another category."
-            action={
-              <button type="button" className="btn btn--primary" onClick={clearFilters}>
-                Clear filters
-              </button>
-            }
-          />
-        ) : (
-          <EmptyState
-            title="No open gigs right now"
-            text={
-              user?.role === 'client'
-                ? 'Post the first one and freelancers can start bidding straight away.'
-                : 'New gigs appear here as soon as clients post them. Check back soon.'
-            }
-            action={
-              user?.role === 'client' ? (
-                <Link className="btn btn--primary" to="/gigs/new">Post a gig</Link>
-              ) : !user ? (
-                <Link className="btn btn--primary" to="/register?role=client">Post a gig as a client</Link>
-              ) : null
-            }
-          />
-        )
-      ) : (
-        <>
-          <ul
-            className={`grid grid--cards gig-results${status === 'loading' ? ' is-stale' : ''}`}
-            aria-busy={status === 'loading'}
-            aria-label="Gigs"
-          >
-            {result.gigs.map((gig) => (
-              <li key={gig._id}>
-                <GigCard gig={gig} />
-              </li>
-            ))}
-          </ul>
+          ))}
+        </ul>
+        <div className="gigs-list__pages">
           <Pagination page={page} pages={result.pages} onChange={goToPage} />
-        </>
-      )}
-    </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <GigFilterBar
+        draft={draft}
+        onDraft={onDraft}
+        category={category}
+        sort={sort}
+        onCategory={(value) => updateParams({ category: value })}
+        onSort={(value) => updateParams({ sort: value === 'newest' ? '' : value })}
+        rangeError={rangeError}
+        hasFilters={hasFilters}
+        onReset={clearFilters}
+        onApplyAll={applyAll}
+      />
+      <Layout variant="full" className="gigs-layout">
+        <div className={`gigs-split${isDesktop && hasResults ? ' gigs-split--two' : ''}`}>
+          <section ref={listRef} className="ui-card gigs-results" aria-labelledby="gigs-results-title">
+            <header className="gigs-results__head">
+              <h1 id="gigs-results-title" className="gigs-results__title">Open gigs</h1>
+              <p className="gigs-results__count" aria-live="polite">{summary}</p>
+            </header>
+            {listBody}
+          </section>
+
+          {isDesktop && hasResults && paneId && (
+            <GigDetailPane
+              key={paneId}
+              gigId={paneId}
+              user={user}
+              authLoading={authLoading}
+              onDeleted={onPaneDeleted}
+            />
+          )}
+        </div>
+      </Layout>
+    </>
   );
 }
