@@ -7,6 +7,14 @@ Clients post gigs with a budget in ₹, freelancers bid on them, the client hire
 real-time chat opens between the two. When the work is done both sides review each other. Gemini AI helps
 freelancers write proposals and helps clients turn rough notes into a clear gig description.
 
+## 🎥 Project Demo Video
+
+A complete walkthrough of the Hirely project, demonstrating the main features,
+user flows, AI integration, real-time chat, bidding, hiring, notifications,
+and dashboards.
+
+**Demo Video:** 
+
 End-term project for **Term 5: Building Web Applications using MERN**.
 Author: **Sohit Kumar Nagar**
 
@@ -85,6 +93,7 @@ cp client/.env.example client/.env     # defaults work for local development
 ```bash
 npm run seed
 ```
+
 This wipes every collection and prints the demo logins:
 
 | Role | Email | Password |
@@ -98,7 +107,7 @@ This wipes every collection and prints the demo logins:
 
 ### 4. Run
 ```bash
-npm run dev:server     # API + Socket.io on http://localhost:5002
+npm run dev:server     # API + Socket.io on http://localhost:5000
 npm run dev:client     # React app on http://localhost:5173
 ```
 
@@ -111,7 +120,7 @@ Other scripts: `npm run check` in `server/` (CI smoke check), `npm run build` an
 ### `server/.env`
 | Variable | Required | Example | Notes |
 |---|---|---|---|
-| `PORT` | no | `5002` | |
+| `PORT` | no | `5000` | |
 | `NODE_ENV` | no | `development` | stack traces are only returned for development 500s |
 | `CLIENT_URL` | no | `http://localhost:5173,http://localhost:4173` | comma-separated allowed origins for CORS and Socket.io (4173 = `vite preview`) |
 | `MONGO_URI` | **yes** | `mongodb://127.0.0.1:27017/hirely` | the server exits with a clear message if missing |
@@ -124,7 +133,7 @@ Other scripts: `npm run check` in `server/` (CI smoke check), `npm run build` an
 ### `client/.env`
 | Variable | Default | Notes |
 |---|---|---|
-| `VITE_API_URL` | `http://localhost:5002/api` | |
+| `VITE_API_URL` | `http://localhost:5000/api` | |
 | `VITE_SOCKET_URL` | the API URL without `/api` | |
 
 ---
@@ -229,7 +238,7 @@ hirely/
 │       ├── config/              db.js, cloudinary.js
 │       ├── models/              User, Gig, Bid, Review, Conversation, Message, Notification
 │       ├── controllers/         auth, user, gig, bid, review, chat, notification, ai, admin
-│       ├── routes/              one router per resource
+│       ├── routes/               one router per resource
 │       ├── middlewares/         auth, validate, errorHandler, upload, cache
 │       ├── validators/index.js  express-validator rule arrays
 │       ├── events/              appEvents.js (EventEmitter), listeners.js
@@ -244,12 +253,12 @@ hirely/
         ├── context/             AuthContext.jsx, SocketContext.jsx, UnreadMessagesContext.jsx
         ├── components/
         │   ├── ui/              Button, Card, Avatar, Cover, Modal, Dropdown, Tabs, FilterPills, Badge,
-        │   │                    Skeleton, SeeMore, BudgetBadge, StatusPill, StarRating, EmptyState, Pagination
-        │   ├── shell/           AppShell, TopNav, MobileTopBar, BottomTabBar, MeMenu, Layout, ...
+        │   │                     Skeleton, SeeMore, BudgetBadge, StatusPill, StarRating, EmptyState, Pagination
+        │   ├── shell/            AppShell, TopNav, MobileTopBar, BottomTabBar, MeMenu, Layout, ...
         │   ├── home/ gigs/ people/ messaging/ rest/   page-specific pieces
         │   └── ProtectedRoute.jsx
         ├── pages/               Home, Login, Register, Gigs, GigDetails, GigForm, Freelancers,
-        │                        Profile, Settings, Dashboard, Chat, Notifications, Admin, NotFound
+        │                         Profile, Settings, Dashboard, Chat, Notifications, Admin, NotFound
         └── utils/               format.js, useDebounce.js
 ```
 
@@ -258,4 +267,3 @@ hirely/
 ## Author
 
 **Sohit Kumar Nagar**, Term 5: Building Web Applications using MERN.
-
