@@ -1,70 +1,42 @@
-import { memo, useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, SearchX, Users } from 'lucide-react';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import Avatar from '../components/Avatar';
-import EmptyState from '../components/EmptyState';
-import Loader from '../components/Loader';
-import Pagination from '../components/Pagination';
-import StarRating from '../components/StarRating';
+import Layout from '../components/shell/Layout';
+import { Button, EmptyState, Pagination, Skeleton } from '../components/ui';
+import { ManageNetworkCard, PersonCard } from '../components/people';
 import useDebounce from '../utils/useDebounce';
-import { formatINR, plural } from '../utils/format';
+import { plural } from '../utils/format';
 
 const LIMIT = 12;
 
-// Session 14: memo - a card re-renders only when its freelancer or online state changes
-const PersonCard = memo(function PersonCard({ person, online }) {
-  const skills = person.skills || [];
-  const extra = skills.length - 4;
-
+// Grid placeholders shaped like PersonCard while the first page loads
+function PeopleGridSkeleton() {
   return (
-    <article className="card person-card fl-card">
-      <div className="person-card__name">
-        <Avatar user={person} size="lg" online={online} />
-        <span className="fl-card__who">
-          <span className="fl-card__name">{person.name}</span>
-          {person.headline && <span className="fl-card__headline">{person.headline}</span>}
-        </span>
-      </div>
-
-      <div className="fl-card__meta">
-        <StarRating value={person.rating?.average} count={person.rating?.count ?? 0} size="sm" />
-        {online && <span className="fl-card__online">Online now</span>}
-      </div>
-
-      {skills.length > 0 && (
-        <ul className="chips" aria-label="Skills">
-          {skills.slice(0, 4).map((s) => (
-            <li key={s} className="chip">{s}</li>
-          ))}
-          {extra > 0 && <li className="chip chip--more">+{extra}</li>}
-        </ul>
-      )}
-
-      <div className="fl-card__foot">
-        <span className="fl-card__rate">
-          {person.hourlyRate > 0 ? (
-            <>
-              <strong>{formatINR(person.hourlyRate)}</strong>
-              <span className="muted">/hr</span>
-            </>
-          ) : (
-            <span className="muted">Rate not set</span>
-          )}
-        </span>
-        <Link
-          className="btn btn--secondary btn--sm stretched-link"
-          to={`/users/${person._id}`}
-          aria-label={`View ${person.name}'s profile`}
-        >
-          View profile
-        </Link>
-      </div>
-    </article>
+    <div className="people-grid" role="status" aria-busy="true">
+      <span className="ui-sr-only">Finding freelancers…</span>
+      {Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className="ui-card people-card people-card--skeleton" aria-hidden="true">
+          <Skeleton shape="rect" height={56} className="people-card__skel-cover" />
+          <div className="people-card__body">
+            <Skeleton shape="circle" width={104} height={104} className="people-card__avatar" />
+            <Skeleton width="70%" />
+            <Skeleton width="90%" height={12} />
+            <Skeleton width="50%" height={12} />
+          </div>
+          <div className="people-card__foot">
+            <Skeleton shape="pill" width="100%" height={32} />
+          </div>
+        </div>
+      ))}
+    </div>
   );
-});
+}
 
 export default function Freelancers() {
+  const { user } = useAuth();
   const { isOnline } = useSocket();
   const [params, setParams] = useSearchParams();
   const q = params.get('q') || '';
@@ -127,72 +99,83 @@ export default function Freelancers() {
 
   const { users, pages, total } = data;
 
+  let results;
+  if (status === 'error') {
+    results = (
+      <div className="people-empty-line people-pad" role="alert">
+        <p className="people-error">Couldn't load freelancers. {error}</p>
+        <Button size="sm" variant="secondary" onClick={() => load()}>Try again</Button>
+      </div>
+    );
+  } else if (status === 'loading' && users.length === 0) {
+    results = <PeopleGridSkeleton />;
+  } else if (users.length === 0) {
+    results = q ? (
+      <EmptyState
+        compact
+        icon={SearchX}
+        title={`No freelancers match "${q}"`}
+        text="Try a shorter search or a single skill, like React or SEO."
+        action={<Button variant="secondary" onClick={clearSearch}>Clear search</Button>}
+      />
+    ) : (
+      <EmptyState
+        compact
+        icon={Users}
+        title="No freelancers yet"
+        text="Freelancers show up here as soon as they sign up. Post a gig and they'll come to you."
+        action={<Button to="/gigs/new">Post a gig</Button>}
+      />
+    );
+  } else {
+    results = (
+      <>
+        <div className={`people-grid${status === 'loading' ? ' is-refreshing' : ''}`} aria-busy={status === 'loading'}>
+          {users.map((u) => (
+            <PersonCard key={u._id} person={u} online={isOnline(u._id)} />
+          ))}
+        </div>
+        <Pagination page={page} pages={pages} onChange={goToPage} />
+      </>
+    );
+  }
+
   return (
-    <div className="container page">
-      <header className="page-head">
-        <div>
-          <h1 className="page-title">Freelancers</h1>
-          <p className="page-sub">Find people by name, skill or headline. Top rated first.</p>
-        </div>
-      </header>
-
-      <form className="fl-search" role="search" onSubmit={(e) => e.preventDefault()}>
-        <label className="label" htmlFor="fl-search">Search freelancers</label>
-        <div className="fl-search__row">
-          <input
-            id="fl-search"
-            className="input"
-            type="search"
-            placeholder="Try React, logo design or SEO"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            autoComplete="off"
-          />
-          {search && (
-            <button type="button" className="btn btn--ghost" onClick={clearSearch}>
-              Clear
-            </button>
-          )}
-        </div>
-      </form>
-
-      {status === 'error' ? (
-        <div className="alert alert--error dash-error" role="alert">
-          <p><strong>Couldn't load freelancers.</strong> {error}</p>
-          <button type="button" className="btn btn--secondary btn--sm" onClick={() => load()}>
-            Try again
-          </button>
-        </div>
-      ) : status === 'loading' && users.length === 0 ? (
-        <Loader label="Finding freelancers" />
-      ) : users.length === 0 ? (
-        q ? (
-          <EmptyState
-            title={`No freelancers match "${q}"`}
-            text="Try a shorter search or a single skill, like React or SEO."
-            action={<button type="button" className="btn btn--secondary" onClick={clearSearch}>Clear search</button>}
-          />
-        ) : (
-          <EmptyState
-            title="No freelancers yet"
-            text="Freelancers show up here as soon as they sign up. Post a gig and they'll come to you."
-            action={<Link className="btn btn--primary" to="/gigs/new">Post gig</Link>}
-          />
-        )
-      ) : (
-        <>
-          <p className="fl-count muted small" aria-live="polite">
-            {q ? `${plural(total, 'freelancer')} match "${q}"` : plural(total, 'freelancer')}
-            {pages > 1 && ` · page ${page} of ${pages}`}
-          </p>
-          <div className="grid grid--cards" aria-busy={status === 'loading'}>
-            {users.map((u) => (
-              <PersonCard key={u._id} person={u} online={isOnline(u._id)} />
-            ))}
+    <Layout variant="two-left" left={user ? <ManageNetworkCard /> : null} className="people-network">
+      <section className="ui-card people-network__card" aria-labelledby="network-title">
+        <header className="people-network__head">
+          <div>
+            <h1 id="network-title" className="people-network__title">Freelancers you may want to follow</h1>
+            <p className="people-network__count" aria-live="polite">
+              {status === 'ready' && total > 0 && (
+                <>
+                  {q ? `${plural(total, 'freelancer')} match "${q}"` : `${plural(total, 'freelancer')} · top rated first`}
+                  {pages > 1 && ` · page ${page} of ${pages}`}
+                </>
+              )}
+            </p>
           </div>
-          <Pagination page={page} pages={pages} onChange={goToPage} />
-        </>
-      )}
-    </div>
+
+          <form className="people-search" role="search" onSubmit={(e) => e.preventDefault()}>
+            <label className="ui-sr-only" htmlFor="people-search">Search freelancers</label>
+            <Search className="people-search__icon" size={16} aria-hidden="true" focusable="false" />
+            <input
+              id="people-search"
+              className="people-search__input"
+              type="search"
+              placeholder="Search by name, skill or headline"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoComplete="off"
+            />
+            {search && (
+              <Button variant="tertiary" size="sm" onClick={clearSearch}>Clear</Button>
+            )}
+          </form>
+        </header>
+
+        <div className="people-network__body">{results}</div>
+      </section>
+    </Layout>
   );
 }
