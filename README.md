@@ -1,8 +1,8 @@
-# GigBazaar
+# Hirely
 
 **Post the work. Pick the right bid.**
 
-GigBazaar is a small freelance marketplace built with the MERN stack (MongoDB, Express, React, Node.js).
+Hirely is a small freelance marketplace built with the MERN stack (MongoDB, Express, React, Node.js).
 Clients post gigs with a budget in ₹, freelancers bid on them, the client hires one bid and a private
 real-time chat opens between the two. When the work is done both sides review each other. Gemini AI helps
 freelancers write proposals and helps clients turn rough notes into a clear gig description.
@@ -30,7 +30,7 @@ Author: **Sohit Kumar Nagar**
 
 ## Syllabus coverage
 
-| Session | Topic | Where to find it in GigBazaar |
+| Session | Topic | Where to find it in Hirely |
 |---|---|---|
 | MERN-1 | Node.js, event-driven architecture, modules, `http` | `server/src/server.js` (`http.createServer(app)`), `server/src/events/appEvents.js` (EventEmitter singleton), `server/src/events/listeners.js` (`notify` listener), `appEvents.emit('notify', …)` in `server/src/controllers/{gig,bid,review,user,chat}Controller.js` |
 | MERN-2 | Express | `server/src/app.js` (middleware chain, one router per resource), `server/src/routes/*.js` |
@@ -70,8 +70,8 @@ Every file uses short `// Session N:` comments at the point where a concept is u
 
 ### 1. Install
 ```bash
-git clone <your-repo-url> gigbazaar
-cd gigbazaar
+git clone <your-repo-url> hirely
+cd hirely
 npm run install:all          # installs server/ and client/
 ```
 
@@ -89,7 +89,7 @@ This wipes every collection and prints the demo logins:
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@gigbazaar.dev | admin123 |
+| Admin | admin@hirely.dev | admin123 |
 | Client | priya@client.dev | password123 |
 | Client | rahul@client.dev | password123 |
 | Freelancer | aman@freelancer.dev | password123 |
@@ -114,7 +114,7 @@ Other scripts: `npm run check` in `server/` (CI smoke check), `npm run build` an
 | `PORT` | no | `5000` | |
 | `NODE_ENV` | no | `development` | stack traces are only returned for development 500s |
 | `CLIENT_URL` | no | `http://localhost:5173,http://localhost:4173` | comma-separated allowed origins for CORS and Socket.io (4173 = `vite preview`) |
-| `MONGO_URI` | **yes** | `mongodb://127.0.0.1:27017/gigbazaar` | the server exits with a clear message if missing |
+| `MONGO_URI` | **yes** | `mongodb://127.0.0.1:27017/hirely` | the server exits with a clear message if missing |
 | `JWT_SECRET` | **yes** | a long random string | the server exits with a clear message if missing |
 | `JWT_EXPIRES_IN` | no | `7d` | |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | no | | without them avatar upload returns 503 with a clear message |
@@ -133,7 +133,7 @@ Other scripts: `npm run check` in `server/` (CI smoke check), `npm run build` an
 
 ### API on Render
 1. Push the repo to GitHub.
-2. In Render choose **New → Blueprint** and select the repo. `render.yaml` creates the `gigbazaar-api` web service (`rootDir: server`, `npm install`, `npm start`, health check `/api/health`) and generates `JWT_SECRET`.
+2. In Render choose **New → Blueprint** and select the repo. `render.yaml` creates the `hirely-api` web service (`rootDir: server`, `npm install`, `npm start`, health check `/api/health`) and generates `JWT_SECRET`.
 3. Fill in the secrets Render asks for: `MONGO_URI` (Atlas; allow access from anywhere `0.0.0.0/0` or Render's IPs), `CLIENT_URL` (your Vercel URL), and optionally the Cloudinary and Gemini keys.
 4. Run the seed once from your machine against the Atlas URI if you want demo data: `MONGO_URI="<atlas uri>" npm run seed --prefix server`.
 
@@ -211,7 +211,7 @@ Connect with `io(SOCKET_URL, { auth: { token } })`. The server verifies the JWT 
 ## Folder structure
 
 ```
-gigbazaar/
+hirely/
 ├── package.json                 root helper scripts (install:all, dev:server, dev:client, seed)
 ├── README.md
 ├── .gitignore

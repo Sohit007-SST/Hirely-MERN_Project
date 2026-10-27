@@ -1,8 +1,8 @@
 {
-  "name": "gigbazaar-server",
+  "name": "hirely-server",
   "version": "1.0.0",
   "private": true,
-  "description": "GigBazaar REST API + Socket.io server",
+  "description": "Hirely backend - Node.js, Express, MongoDB, Socket.io, JWT, Cloudinary, Gemini",
   "main": "src/server.js",
   "engines": {
     "node": ">=18"

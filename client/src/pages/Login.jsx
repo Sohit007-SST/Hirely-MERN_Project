@@ -60,7 +60,7 @@ export default function Login() {
   return (
     <div className="auth container">
       <div className="card auth__card">
-        <h1 className="auth__title">Log in to GigBazaar</h1>
+        <h1 className="auth__title">Log in to Hirely</h1>
         <p className="muted auth__sub">Pick up where you left off.</p>
 
         {error && <div className="alert alert--error" role="alert">{error}</div>}
@@ -105,7 +105,7 @@ export default function Login() {
         </form>
 
         <p className="auth__switch">
-          New to GigBazaar?{' '}
+          New to Hirely?{' '}
           <Link className="link" to="/register" state={location.state}>Create an account</Link>
         </p>
       </div>

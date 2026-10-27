@@ -33,7 +33,7 @@ const start = async () => {
   });
 
   server.listen(PORT, () => {
-    console.log(`GigBazaar API running on http://localhost:${PORT} (${process.env.NODE_ENV || 'development'})`);
+    console.log(`Hirely API running on http://localhost:${PORT}`);
   });
 };
 

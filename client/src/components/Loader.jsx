@@ -1,10 +1,7 @@
-// Props: { full?: boolean (fills the page area), label?: string = 'Loading' }
-// Deliberately static: the home board is the app's only animation.
+// Old Loader API kept for pages not yet redesigned: the spinner is gone, it now shows skeletons.
+// Props: { full?: boolean (a whole-page skeleton), label?: string = 'Loading' }
+import { SkeletonPage, SkeletonRow } from './ui/Skeleton';
+
 export default function Loader({ full = false, label = 'Loading' }) {
-  return (
-    <div className={`loader${full ? ' loader--full' : ''}`} role="status" aria-live="polite">
-      <span className="loader__tag" aria-hidden="true" />
-      <span className="loader__label">{label}…</span>
-    </div>
-  );
+  return full ? <SkeletonPage label={label} /> : <SkeletonRow count={3} label={label} />;
 }

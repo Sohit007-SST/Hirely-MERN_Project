@@ -60,7 +60,7 @@ export default function Register() {
     setSubmitting(true);
     try {
       const u = await register({ name: form.name.trim(), email: form.email.trim(), password: form.password, role });
-      toast.success(`Welcome to GigBazaar, ${u.name.split(' ')[0]}`);
+      toast.success(`Welcome to Hirely, ${u.name.split(' ')[0]}`);
       navigate(dest, { replace: true });
     } catch (err) {
       // Show validation errors next to their fields; anything else at the top
@@ -95,7 +95,7 @@ export default function Register() {
 
         <form className="form" onSubmit={onSubmit} noValidate>
           <fieldset className="role-picker">
-            <legend className="label">How will you use GigBazaar?</legend>
+            <legend className="label">How will you use Hirely?</legend>
             <div className="role-picker__options">
               {ROLES.map((r) => (
                 <label key={r.value} className="role-option">

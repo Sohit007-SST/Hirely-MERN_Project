@@ -1,12 +1,7 @@
-// Props: { amount: number, size?: 'sm'|'md'|'lg' = 'md', label?: string (small caption above the amount, lg only, e.g. "Budget") }
-import { formatINR } from '../utils/format';
+// Old PriceTag API kept for pages not yet redesigned: the swing-tag is gone, it now renders ui/BudgetBadge.
+// Props: { amount: number, size?: 'sm'|'md'|'lg' = 'md', label?: string (caption, lg only, e.g. "Budget") }
+import BudgetBadge from './ui/BudgetBadge';
 
-// The signature element: every budget is a marigold swing-tag
 export default function PriceTag({ amount, size = 'md', label }) {
-  return (
-    <span className={`price-tag price-tag--${size}`}>
-      {label && size === 'lg' && <span className="price-tag__label">{label}</span>}
-      <span className="price-tag__amount">{formatINR(amount)}</span>
-    </span>
-  );
+  return <BudgetBadge amount={amount} size={size} label={size === 'lg' ? label : undefined} />;
 }

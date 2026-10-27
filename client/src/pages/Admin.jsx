@@ -198,7 +198,7 @@ export default function Admin() {
   const toggleBan = async (u) => {
     if (
       !u.isBanned &&
-      !window.confirm(`Suspend ${u.name}? They won't be able to log in or use GigBazaar until you restore the account.`)
+      !window.confirm(`Suspend ${u.name}? They won't be able to log in or use Hirely until you restore the account.`)
     ) {
       return;
     }
@@ -207,7 +207,7 @@ export default function Admin() {
       const { data: res } = await api.patch(`/admin/users/${u._id}/ban`);
       const banned = res.user.isBanned;
       setData((d) => ({ ...d, users: d.users.map((x) => (sameId(x, u) ? { ...x, isBanned: banned } : x)) }));
-      toast.success(banned ? `${u.name} is suspended` : `${u.name} can use GigBazaar again`);
+      toast.success(banned ? `${u.name} is suspended` : `${u.name} can use Hirely again`);
       loadStats();
     } catch (err) {
       toast.error(err.message);

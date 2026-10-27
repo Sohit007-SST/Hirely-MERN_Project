@@ -39,9 +39,8 @@ function MenuIcon({ open }) {
 export function Logo() {
   return (
     <svg className="brand-mark" viewBox="0 0 64 64" width="30" height="30" aria-hidden="true">
-      <rect width="64" height="64" rx="14" fill="#1b2340" />
-      <path d="M18 22h30v20H18l-8-10z" fill="#f4b000" />
-      <circle cx="19" cy="32" r="3" fill="#1b2340" />
+      <rect width="64" height="64" rx="14" style={{ fill: 'var(--primary)' }} />
+      <path d="M20 16h7v13h10V16h7v32h-7V35H27v13h-7z" style={{ fill: 'var(--on-primary)' }} />
     </svg>
   );
 }
@@ -126,9 +125,9 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="container navbar__inner">
-        <Link to="/" className="navbar__brand" aria-label="GigBazaar home">
+        <Link to="/" className="navbar__brand" aria-label="Hirely home">
           <Logo />
-          <span>GigBazaar</span>
+          <span>Hirely</span>
         </Link>
 
         <nav

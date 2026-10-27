@@ -1,4 +1,4 @@
-// Demo data for GigBazaar. WARNING: wipes every collection first.
+// Demo data for Hirely. WARNING: wipes every collection first.
 // Run with: npm run seed  (uses MONGO_URI from server/.env unless set in the shell)
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
@@ -30,7 +30,7 @@ const seed = async () => {
   await Promise.all(models.map((model) => model.init())); // make sure indexes exist (unique email, text search)
 
   // ---- Users (User.create runs the pre-save hook, so passwords are hashed) ----
-  await User.create({ name: 'GigBazaar Admin', email: 'admin@gigbazaar.dev', password: 'admin123', role: 'admin' });
+  await User.create({ name: 'Hirely Admin', email: 'admin@hirely.dev', password: 'admin123', role: 'admin' });
 
   const priya = await User.create({
     name: 'Priya Sharma',
@@ -251,7 +251,7 @@ const seed = async () => {
 
   console.log('Created 6 users, 6 gigs (5 open + 1 completed), 4 bids, 2 reviews, 1 conversation.');
   console.log('\nDemo logins');
-  console.log('  Admin       admin@gigbazaar.dev  / admin123');
+  console.log('  Admin       admin@hirely.dev     / admin123');
   console.log('  Client      priya@client.dev     / password123');
   console.log('  Client      rahul@client.dev     / password123');
   console.log('  Freelancer  aman@freelancer.dev  / password123');

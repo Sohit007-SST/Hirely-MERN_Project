@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Bell } from 'lucide-react';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Navbar from './components/Navbar';
@@ -22,6 +23,8 @@ const Chat = lazy(() => import('./pages/Chat'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Admin = lazy(() => import('./pages/Admin'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+// TEMPORARY: removed in redesign Phase 8 (shows every components/ui primitive)
+const UiPreview = lazy(() => import('./pages/UiPreview'));
 
 // New page, top of the window (browsers keep the old scroll position in SPAs)
 function ScrollToTop() {
@@ -50,6 +53,8 @@ export default function App() {
                 <Route path="/gigs" element={<Gigs />} />
                 <Route path="/freelancers" element={<Freelancers />} />
                 <Route path="/users/:id" element={<Profile />} />
+                {/* TEMPORARY: removed in redesign Phase 8 */}
+                <Route path="/ui-preview" element={<UiPreview />} />
 
                 {/* Session 7: client-only routes (same GigForm for create and edit) */}
                 <Route
@@ -77,12 +82,15 @@ export default function App() {
             </Suspense>
           </main>
           <Toaster
-            position="top-right"
+            position="bottom-left"
             toastOptions={{
               className: 'toast',
               duration: 4000,
-              success: { iconTheme: { primary: '#0f7b6c', secondary: '#ffffff' } },
-              error: { iconTheme: { primary: '#b4441c', secondary: '#ffffff' } },
+              // Colours are CSS variables, so toasts follow light / dark mode like everything else
+              success: { iconTheme: { primary: 'var(--success)', secondary: 'var(--surface)' } },
+              error: { iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' } },
+              loading: { iconTheme: { primary: 'var(--primary)', secondary: 'var(--border)' } },
+              blank: { icon: <Bell className="toast__icon" size={16} aria-hidden="true" /> },
             }}
           />
         </SocketProvider>

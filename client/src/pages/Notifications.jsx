@@ -22,7 +22,7 @@ const TYPES = {
   system: ['Account', 'rust'],
 };
 
-const SYSTEM_SENDER = { name: 'GigBazaar' };
+const SYSTEM_SENDER = { name: 'Hirely' };
 
 function NotificationItem({ notification: n, onOpen }) {
   const [label, tone] = TYPES[n.type] || ['Update', 'ink'];

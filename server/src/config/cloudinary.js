@@ -17,7 +17,7 @@ if (isCloudinaryConfigured()) {
 }
 
 // Upload a buffer (from multer memory storage) via an upload stream
-const uploadBuffer = (buffer, folder = 'gigbazaar/avatars') =>
+const uploadBuffer = (buffer, folder = 'hirely/avatars') =>
   new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder, resource_type: 'image', transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }] },
