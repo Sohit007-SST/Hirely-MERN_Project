@@ -98,7 +98,7 @@ This wipes every collection and prints the demo logins:
 
 ### 4. Run
 ```bash
-npm run dev:server     # API + Socket.io on http://localhost:5000
+npm run dev:server     # API + Socket.io on http://localhost:5002
 npm run dev:client     # React app on http://localhost:5173
 ```
 
@@ -111,7 +111,7 @@ Other scripts: `npm run check` in `server/` (CI smoke check), `npm run build` an
 ### `server/.env`
 | Variable | Required | Example | Notes |
 |---|---|---|---|
-| `PORT` | no | `5000` | |
+| `PORT` | no | `5002` | |
 | `NODE_ENV` | no | `development` | stack traces are only returned for development 500s |
 | `CLIENT_URL` | no | `http://localhost:5173,http://localhost:4173` | comma-separated allowed origins for CORS and Socket.io (4173 = `vite preview`) |
 | `MONGO_URI` | **yes** | `mongodb://127.0.0.1:27017/hirely` | the server exits with a clear message if missing |
@@ -124,7 +124,7 @@ Other scripts: `npm run check` in `server/` (CI smoke check), `npm run build` an
 ### `client/.env`
 | Variable | Default | Notes |
 |---|---|---|
-| `VITE_API_URL` | `http://localhost:5000/api` | |
+| `VITE_API_URL` | `http://localhost:5002/api` | |
 | `VITE_SOCKET_URL` | the API URL without `/api` | |
 
 ---

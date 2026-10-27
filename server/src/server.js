@@ -15,7 +15,7 @@ const { app, allowedOrigins } = require('./app');
 const { initSocket } = require('./socket');
 const registerListeners = require('./events/listeners');
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
 const start = async () => {
   await connectDB();
