@@ -13,7 +13,7 @@ A complete walkthrough of the Hirely project, demonstrating the main features,
 user flows, AI integration, real-time chat, bidding, hiring, notifications,
 and dashboards.
 
-**Demo Video:** 
+**Demo Video:** https://drive.google.com/file/d/12ZMukr5098kAm5hpENRJ6tCUqowtL57y/view?usp=drivesdk
 
 End-term project for **Term 5: Building Web Applications using MERN**.
 Author: **Sohit Kumar Nagar**
